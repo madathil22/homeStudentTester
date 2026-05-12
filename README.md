@@ -13,13 +13,57 @@ npm start
 Then open:
 
 ```text
-http://localhost:3000/admin/parent-local-secret
+http://localhost:3000/admin/test-admin
 ```
 
-Set different local tokens with environment variables:
+## Use On Your Wi-Fi
+
+The app reads `.env` when you run `npm start`. To allow other devices on your Wi-Fi, keep:
+
+```env
+HOST=0.0.0.0
+PORT=3000
+```
+
+Start the app:
 
 ```sh
-ADMIN_TOKEN=parent-my-secret TEST_TOKEN=test-my-secret npm start
+npm start
+```
+
+Find your computer's Wi-Fi IP address:
+
+```sh
+hostname -I
+```
+
+Then open the student test URL on another device using that IP:
+
+```text
+http://YOUR-COMPUTER-IP:3000/take/test-paper
+```
+
+Example:
+
+```text
+http://192.168.1.25:3000/take/test-paper
+```
+
+The parent/admin URL from another device would be:
+
+```text
+http://YOUR-COMPUTER-IP:3000/admin/test-admin
+```
+
+If another device cannot connect, make sure both devices are on the same Wi-Fi and allow Node/port `3000` through your computer firewall.
+
+Set different local tokens in `.env`:
+
+```env
+ADMIN_TOKEN=parent-my-secret
+TEST_TOKEN=test-my-secret
+HOST=0.0.0.0
+PORT=3000
 ```
 
 ## What Works

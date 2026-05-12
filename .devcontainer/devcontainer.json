@@ -39,7 +39,7 @@
     }
   },
 
-  "forwardPorts": [1455,5173],
+  "forwardPorts": [1455,5173,3000],
 
   "portsAttributes": {
     "1455": {
@@ -48,6 +48,10 @@
     },
     "5173": {
       "label": "Vite Dev Server",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "Node.js Server",
       "onAutoForward": "notify"
     }
   },

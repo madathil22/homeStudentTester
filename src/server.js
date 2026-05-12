@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, '..', 'public');
 
 const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? '0.0.0.0';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? 'parent-local-secret';
 const TEST_TOKEN = process.env.TEST_TOKEN ?? 'test-local-secret';
 
@@ -36,8 +37,9 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`homeStudentTester running at http://localhost:${PORT}/admin/${ADMIN_TOKEN}`);
+server.listen(PORT, HOST, () => {
+  console.log(`homeStudentTester running locally at http://localhost:${PORT}/admin/${ADMIN_TOKEN}`);
+  console.log(`Use your Wi-Fi IP for other devices: http://YOUR-COMPUTER-IP:${PORT}/take/${TEST_TOKEN}`);
 });
 
 function matchRoute(method, pathname) {
