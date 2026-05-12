@@ -5,7 +5,9 @@
 
   "runArgs": [
     "--cpus=2",
-    "--memory=4g"
+    "--memory=4g",
+    "-p",
+    "0.0.0.0:3000:3000"
   ],
 
   "mounts": [
