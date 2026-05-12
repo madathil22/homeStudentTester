@@ -1,0 +1,58 @@
+{
+  "name": "UI React Vite DevPod",
+
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-bookworm",
+
+  "runArgs": [
+    "--cpus=2",
+    "--memory=4g"
+  ],
+
+  "mounts": [
+    "source=npm-cache,target=/home/node/.npm,type=volume"
+  ],
+
+  "containerEnv": {
+    "NODE_ENV": "development"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "openai.chatgpt",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "files.watcherExclude": {
+          "**/.git/**": true,
+          "**/node_modules/**": true,
+          "**/dist/**": true
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [1455,5173],
+
+  "portsAttributes": {
+    "1455": {
+      "label": "Codex OAuth Callback",
+      "onAutoForward": "openBrowser"
+    },
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "postCreateCommand": "node -v && npm -v",
+
+  "remoteUser": "node"
+}
