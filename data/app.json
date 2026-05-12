@@ -1,0 +1,428 @@
+{
+  "activeTest": {
+    "rawMarkdown": "# Grade 3 Math NJSLA Practice Test\n\nInstructions: Read each question carefully. Show your thinking when asked.\n\n---\n\n## Question 1\n\nType: multiple_choice\nPoints: 1\n\nLena has 6 bags. Each bag has 4 apples. How many apples does Lena have in all?\n\nA. 10\nB. 20\nC. 24\nD. 30\n\n---\n\n## Question 2\n\nType: multiple_choice\nPoints: 1\n\nWhat is the value of the digit 7 in the number 4,782?\n\nA. 7\nB. 70\nC. 700\nD. 7,000\n\n---\n\n## Question 3\n\nType: multiple_choice\nPoints: 1\n\nA rectangle has a length of 8 units and a width of 3 units. What is the area of the rectangle?\n\nA. 11 square units\nB. 16 square units\nC. 24 square units\nD. 48 square units\n\n---\n\n## Question 4\n\nType: multiple_choice\nPoints: 1\n\nWhich fraction is greater?\n\nA. 1/4\nB. 1/2\nC. They are equal\nD. Cannot tell\n\n---\n\n## Question 5\n\nType: multiple_choice\nPoints: 1\n\nA movie starts at 2:15 PM and ends at 4:00 PM. How long is the movie?\n\nA. 1 hour 15 minutes\nB. 1 hour 30 minutes\nC. 1 hour 45 minutes\nD. 2 hours\n\n---\n\n## Question 6\n\nType: multiple_choice\nPoints: 1\n\nWhat number is rounded to the nearest hundred correctly?\n\nA. 348 → 300\nB. 351 → 300\nC. 372 → 400\nD. 449 → 500\n\n---\n\n## Question 7\n\nType: multiple_choice\nPoints: 1\n\nA classroom has 5 rows of desks with 7 desks in each row. How many desks are there?\n\nA. 12\nB. 30\nC. 35\nD. 42\n\n---\n\n## Question 8\n\nType: multiple_choice\nPoints: 1\n\nWhat is the perimeter of a rectangle with side lengths 6 units and 4 units?\n\nA. 10 units\nB. 20 units\nC. 24 units\nD. 40 units\n\n---\n\n## Question 9\n\nType: multiple_choice\nPoints: 1\n\nWhich point shows 3/4 on a number line from 0 to 1 divided into 4 equal parts?\n\nA. The first mark after 0\nB. The second mark after 0\nC. The third mark after 0\nD. The last mark after 1\n\n---\n\n## Question 10\n\nType: multiple_choice\nPoints: 1\n\nJamal has 45 stickers. He gives 18 stickers to his friend. How many stickers does he have left?\n\nA. 17\nB. 23\nC. 27\nD. 37\n\n---\n\n## Question 11\n\nType: multiple_choice\nPoints: 1\n\nA bar graph shows how many books students read:\n\n* Mia: 8 books\n* Noah: 5 books\n* Ava: 7 books\n* Liam: 6 books\n\nWho read the most books?\n\nA. Noah\nB. Liam\nC. Ava\nD. Mia\n\n---\n\n## Question 12\n\nType: multiple_choice\nPoints: 1\n\nThere are 56 cookies shared equally among 8 children. How many cookies does each child get?\n\nA. 6\nB. 7\nC. 8\nD. 9\n\n---\n\n## Question 13\n\nType: multi_select\nPoints: 2\n\nSelect ALL equations that equal 24.\n\nA. 6 × 4\nB. 30 − 6\nC. 8 × 2\nD. 48 ÷ 2\n\n---\n\n## Question 14\n\nType: multi_select\nPoints: 2\n\nSelect ALL fractions that are greater than 1/3.\n\nA. 1/2\nB. 1/4\nC. 3/4\nD. 2/6\n\n---\n\n## Question 15\n\nType: text\nPoints: 1\n\nWrite the number that is 10 more than 589.\n\n---\n\n## Question 16\n\nType: text\nPoints: 1\n\nWhat is 9 × 6?\n\n---\n\n## Question 17\n\nType: short_response\nPoints: 2\n\nMaya buys 3 packs of markers. Each pack has 8 markers. Then she gives 5 markers to her brother.\n\nHow many markers does Maya have left?\n\nShow or explain your thinking.\n\n---\n\n## Question 18\n\nType: short_response\nPoints: 2\n\nA garden is shaped like a rectangle. It has a length of 9 feet and a width of 4 feet.\n\nFind BOTH:\n\n* the area\n* the perimeter\n\nShow or explain your thinking.\n\n---\n\n# Answer Bank\n\n## Question 1\n\nAnswer: C\nPoints: 1\n\nExplanation: 6 × 4 = 24 apples.\n\n---\n\n## Question 2\n\nAnswer: C\nPoints: 1\n\nExplanation: The 7 is in the hundreds place, so its value is 700.\n\n---\n\n## Question 3\n\nAnswer: C\nPoints: 1\n\nExplanation: Area = length × width = 8 × 3 = 24 square units.\n\n---\n\n## Question 4\n\nAnswer: B\nPoints: 1\n\nExplanation: 1/2 is greater than 1/4 because halves are larger pieces than fourths.\n\n---\n\n## Question 5\n\nAnswer: C\nPoints: 1\n\nExplanation: From 2:15 PM to 4:00 PM is 1 hour and 45 minutes.\n\n---\n\n## Question 6\n\nAnswer: C\nPoints: 1\n\nExplanation: 372 rounds to 400 because the tens digit is 7.\n\n---\n\n## Question 7\n\nAnswer: C\nPoints: 1\n\nExplanation: 5 × 7 = 35 desks.\n\n---\n\n## Question 8\n\nAnswer: B\nPoints: 1\n\nExplanation: Perimeter = 6 + 4 + 6 + 4 = 20 units.\n\n---\n\n## Question 9\n\nAnswer: C\nPoints: 1\n\nExplanation: 3/4 is the third equal mark between 0 and 1.\n\n---\n\n## Question 10\n\nAnswer: C\nPoints: 1\n\nExplanation: 45 − 18 = 27.\n\n---\n\n## Question 11\n\nAnswer: D\nPoints: 1\n\nExplanation: Mia read 8 books, which is the greatest amount.\n\n---\n\n## Question 12\n\nAnswer: B\nPoints: 1\n\nExplanation: 56 ÷ 8 = 7.\n\n---\n\n## Question 13\n\nAnswer: A, B, D\nPoints: 2\n\nExplanation:\n\n* 6 × 4 = 24\n* 30 − 6 = 24\n* 48 ÷ 2 = 24\n* 8 × 2 = 16\n\n---\n\n## Question 14\n\nAnswer: A, C\nPoints: 2\n\nExplanation:\n\n* 1/2 is greater than 1/3\n* 3/4 is greater than 1/3\n* 1/4 is smaller than 1/3\n* 2/6 equals 1/3, not greater\n\n---\n\n## Question 15\n\nAnswer: 599\nAccept: five hundred ninety-nine\n\nPoints: 1\n\nExplanation: 589 + 10 = 599.\n\n---\n\n## Question 16\n\nAnswer: 54\nAccept: fifty-four\n\nPoints: 1\n\nExplanation: 9 × 6 = 54.\n\n---\n\n## Question 17\n\nAnswer: 19\nPoints: 2\n\nRubric:\n\n* 2: Complete correct reasoning.\n* 1: Partially correct reasoning.\n* 0: Incorrect, unclear, or blank.\n\nSample Answer:\nMaya starts with 3 × 8 = 24 markers.\nThen she gives away 5 markers.\n24 − 5 = 19 markers left.\n\n---\n\n## Question 18\n\nAnswer: Area = 36 square feet, Perimeter = 26 feet\nPoints: 2\n\nRubric:\n\n* 2: Complete correct reasoning.\n* 1: Partially correct reasoning.\n* 0: Incorrect, unclear, or blank.\n\nSample Answer:\nArea: 9 × 4 = 36 square feet.\nPerimeter: 9 + 4 + 9 + 4 = 26 feet.\n",
+    "parsed": {
+      "title": "Grade 3 Math NJSLA Practice Test",
+      "instructions": "Instructions: Read each question carefully. Show your thinking when asked.",
+      "passages": [],
+      "questions": [
+        {
+          "number": "1",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "Lena has 6 bags. Each bag has 4 apples. How many apples does Lena have in all?",
+          "options": [
+            {
+              "label": "A",
+              "text": "10"
+            },
+            {
+              "label": "B",
+              "text": "20"
+            },
+            {
+              "label": "C",
+              "text": "24"
+            },
+            {
+              "label": "D",
+              "text": "30"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "2",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "What is the value of the digit 7 in the number 4,782?",
+          "options": [
+            {
+              "label": "A",
+              "text": "7"
+            },
+            {
+              "label": "B",
+              "text": "70"
+            },
+            {
+              "label": "C",
+              "text": "700"
+            },
+            {
+              "label": "D",
+              "text": "7,000"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "3",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "A rectangle has a length of 8 units and a width of 3 units. What is the area of the rectangle?",
+          "options": [
+            {
+              "label": "A",
+              "text": "11 square units"
+            },
+            {
+              "label": "B",
+              "text": "16 square units"
+            },
+            {
+              "label": "C",
+              "text": "24 square units"
+            },
+            {
+              "label": "D",
+              "text": "48 square units"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "4",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "Which fraction is greater?",
+          "options": [
+            {
+              "label": "A",
+              "text": "1/4"
+            },
+            {
+              "label": "B",
+              "text": "1/2"
+            },
+            {
+              "label": "C",
+              "text": "They are equal"
+            },
+            {
+              "label": "D",
+              "text": "Cannot tell"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "5",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "A movie starts at 2:15 PM and ends at 4:00 PM. How long is the movie?",
+          "options": [
+            {
+              "label": "A",
+              "text": "1 hour 15 minutes"
+            },
+            {
+              "label": "B",
+              "text": "1 hour 30 minutes"
+            },
+            {
+              "label": "C",
+              "text": "1 hour 45 minutes"
+            },
+            {
+              "label": "D",
+              "text": "2 hours"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "6",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "What number is rounded to the nearest hundred correctly?",
+          "options": [
+            {
+              "label": "A",
+              "text": "348 → 300"
+            },
+            {
+              "label": "B",
+              "text": "351 → 300"
+            },
+            {
+              "label": "C",
+              "text": "372 → 400"
+            },
+            {
+              "label": "D",
+              "text": "449 → 500"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "7",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "A classroom has 5 rows of desks with 7 desks in each row. How many desks are there?",
+          "options": [
+            {
+              "label": "A",
+              "text": "12"
+            },
+            {
+              "label": "B",
+              "text": "30"
+            },
+            {
+              "label": "C",
+              "text": "35"
+            },
+            {
+              "label": "D",
+              "text": "42"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "8",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "What is the perimeter of a rectangle with side lengths 6 units and 4 units?",
+          "options": [
+            {
+              "label": "A",
+              "text": "10 units"
+            },
+            {
+              "label": "B",
+              "text": "20 units"
+            },
+            {
+              "label": "C",
+              "text": "24 units"
+            },
+            {
+              "label": "D",
+              "text": "40 units"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "9",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "Which point shows 3/4 on a number line from 0 to 1 divided into 4 equal parts?",
+          "options": [
+            {
+              "label": "A",
+              "text": "The first mark after 0"
+            },
+            {
+              "label": "B",
+              "text": "The second mark after 0"
+            },
+            {
+              "label": "C",
+              "text": "The third mark after 0"
+            },
+            {
+              "label": "D",
+              "text": "The last mark after 1"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "10",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "Jamal has 45 stickers. He gives 18 stickers to his friend. How many stickers does he have left?",
+          "options": [
+            {
+              "label": "A",
+              "text": "17"
+            },
+            {
+              "label": "B",
+              "text": "23"
+            },
+            {
+              "label": "C",
+              "text": "27"
+            },
+            {
+              "label": "D",
+              "text": "37"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "11",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "A bar graph shows how many books students read:\n* Mia: 8 books\n* Noah: 5 books\n* Ava: 7 books\n* Liam: 6 books\nWho read the most books?",
+          "options": [
+            {
+              "label": "A",
+              "text": "Noah"
+            },
+            {
+              "label": "B",
+              "text": "Liam"
+            },
+            {
+              "label": "C",
+              "text": "Ava"
+            },
+            {
+              "label": "D",
+              "text": "Mia"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "12",
+          "type": "multiple_choice",
+          "points": 1,
+          "prompt": "There are 56 cookies shared equally among 8 children. How many cookies does each child get?",
+          "options": [
+            {
+              "label": "A",
+              "text": "6"
+            },
+            {
+              "label": "B",
+              "text": "7"
+            },
+            {
+              "label": "C",
+              "text": "8"
+            },
+            {
+              "label": "D",
+              "text": "9"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "13",
+          "type": "multi_select",
+          "points": 2,
+          "prompt": "Select ALL equations that equal 24.",
+          "options": [
+            {
+              "label": "A",
+              "text": "6 × 4"
+            },
+            {
+              "label": "B",
+              "text": "30 − 6"
+            },
+            {
+              "label": "C",
+              "text": "8 × 2"
+            },
+            {
+              "label": "D",
+              "text": "48 ÷ 2"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "14",
+          "type": "multi_select",
+          "points": 2,
+          "prompt": "Select ALL fractions that are greater than 1/3.",
+          "options": [
+            {
+              "label": "A",
+              "text": "1/2"
+            },
+            {
+              "label": "B",
+              "text": "1/4"
+            },
+            {
+              "label": "C",
+              "text": "3/4"
+            },
+            {
+              "label": "D",
+              "text": "2/6"
+            }
+          ],
+          "passageIds": []
+        },
+        {
+          "number": "15",
+          "type": "text",
+          "points": 1,
+          "prompt": "Write the number that is 10 more than 589.",
+          "options": [],
+          "passageIds": []
+        },
+        {
+          "number": "16",
+          "type": "text",
+          "points": 1,
+          "prompt": "What is 9 × 6?",
+          "options": [],
+          "passageIds": []
+        },
+        {
+          "number": "17",
+          "type": "short_response",
+          "points": 2,
+          "prompt": "Maya buys 3 packs of markers. Each pack has 8 markers. Then she gives 5 markers to her brother.\nHow many markers does Maya have left?\nShow or explain your thinking.",
+          "options": [],
+          "passageIds": []
+        },
+        {
+          "number": "18",
+          "type": "short_response",
+          "points": 2,
+          "prompt": "A garden is shaped like a rectangle. It has a length of 9 feet and a width of 4 feet.\nFind BOTH:\n* the area\n* the perimeter\nShow or explain your thinking.",
+          "options": [],
+          "passageIds": []
+        }
+      ]
+    },
+    "createdAt": "2026-05-12T21:16:53.069Z"
+  },
+  "answerBank": {
+    "rawMarkdown": "Question 1\n\nAnswer: C\nPoints: 1\n\nExplanation: 6 × 4 = 24 apples.\n\nQuestion 2\n\nAnswer: C\nPoints: 1\n\nExplanation: The 7 is in the hundreds place, so its value is 700.\n\nQuestion 3\n\nAnswer: C\nPoints: 1\n\nExplanation: Area = length × width = 8 × 3 = 24 square units.\n\nQuestion 4\n\nAnswer: B\nPoints: 1\n\nExplanation: 1/2 is greater than 1/4 because halves are larger than fourths.\n\nQuestion 5\n\nAnswer: C\nPoints: 1\n\nExplanation: From 2:15 PM to 4:00 PM is 1 hour and 45 minutes.\n\nQuestion 6\n\nAnswer: C\nPoints: 1\n\nExplanation: 372 rounds to 400 because the tens digit is 7.\n\nQuestion 7\n\nAnswer: C\nPoints: 1\n\nExplanation: 5 × 7 = 35 desks.\n\nQuestion 8\n\nAnswer: B\nPoints: 1\n\nExplanation: Perimeter = 6 + 4 + 6 + 4 = 20 units.\n\nQuestion 9\n\nAnswer: C\nPoints: 1\n\nExplanation: 3/4 is the third equal mark between 0 and 1.\n\nQuestion 10\n\nAnswer: C\nPoints: 1\n\nExplanation: 45 − 18 = 27.\n\nQuestion 11\n\nAnswer: D\nPoints: 1\n\nExplanation: Mia read 8 books, which is the greatest amount.\n\nQuestion 12\n\nAnswer: B\nPoints: 1\n\nExplanation: 56 ÷ 8 = 7.\n\nQuestion 13\n\nAnswer: A, B, D\nPoints: 2\n\nExplanation:\n6 × 4 = 24, 30 − 6 = 24, and 48 ÷ 2 = 24.\n\nQuestion 14\n\nAnswer: A, C\nPoints: 2\n\nExplanation:\n1/2 and 3/4 are both greater than 1/3.\n\nQuestion 15\n\nAnswer: 599\nAccept: five hundred ninety-nine\n\nPoints: 1\n\nExplanation: 589 + 10 = 599.\n\nQuestion 16\n\nAnswer: 54\nAccept: fifty-four\n\nPoints: 1\n\nExplanation: 9 × 6 = 54.\n\nQuestion 17\n\nAnswer: 19\nPoints: 2\n\nRubric:\n\n2: Complete correct reasoning and correct answer.\n1: Partially correct reasoning or minor mistake.\n0: Incorrect, unclear, or blank.\n\nSample Answer:\nMaya starts with 3 packs of 8 markers, so 3 × 8 = 24. Then she gives away 5 markers. 24 − 5 = 19 markers left.\n\nQuestion 18\n\nAnswer: Area = 36 square feet, Perimeter = 26 feet\nPoints: 2\n\nRubric:\n\n2: Complete correct reasoning and correct answer.\n1: Partially correct reasoning or minor mistake.\n0: Incorrect, unclear, or blank.\n\nSample Answer:\nThe area is 9 × 4 = 36 square feet. The perimeter is 9 + 4 + 9 + 4 = 26 feet.",
+    "parsed": {},
+    "createdAt": "2026-05-12T21:10:34.701Z"
+  },
+  "submissions": [
+    {
+      "id": "532ce676-c713-49bf-a3f4-c558cbe3544a",
+      "studentName": "et",
+      "submittedAt": "2026-05-12T21:18:40.369Z",
+      "answers": {
+        "1": "B",
+        "2": "B",
+        "3": "B",
+        "4": "C",
+        "5": "A",
+        "6": "A",
+        "7": "A",
+        "8": "C",
+        "9": "C",
+        "10": "C",
+        "11": "C",
+        "12": "D",
+        "13": "A, B, D",
+        "14": "C, D",
+        "15": "599",
+        "16": "54",
+        "17": "19\n\n8*3=24 markers -5=19",
+        "18": "32"
+      },
+      "score": null
+    }
+  ]
+}
