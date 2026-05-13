@@ -1,132 +1,95 @@
 # homeStudentTester
 
-A small family-use test-taking app for one active Markdown test at a time. A
-parent can paste a Markdown question bank, paste an optional Markdown answer
-bank, share a student link on the local network, collect submissions, and score
-objective answers.
+A family-use test-generation and test-taking app powered by Spring Boot and Vite.
+The current flow generates a unique HTML test for each subject via OpenAI, saves
+it in the backend, and exposes a unique student route per generated test.
+
+## Current State
+
+- Backend is Spring Boot (Java 21) and stores generated test HTML in H2.
+- Frontend is Vite + React and runs on `localhost:5173` / devpod forwarded port.
+- Unique links are generated per subject, for example:
+  - `/test1`
+  - `/test2`
+- The admin UI can create tests, list generated subjects, and delete them inline.
+- Student routes render the generated HTML page for the requested test ID.
 
 ## Run Locally
 
-Requires Node 22 or newer.
+### Backend
+
+From `/workspaces/homestudenttester/backend`:
 
 ```sh
-npm start
+gradle bootRun
 ```
 
-Then open:
+The backend reads `.env` from the workspace root when launched from the VS Code
+task configured to source `.env`.
 
-```text
-http://localhost:3000/admin/test-admin
-```
+### Frontend
 
-This project's `.env` currently uses:
-
-```env
-ADMIN_TOKEN=test-admin
-TEST_TOKEN=test-paper
-HOST=0.0.0.0
-PORT=3000
-```
-
-So the local URLs are:
-
-```text
-http://localhost:3000/admin/test-admin
-http://localhost:3000/take/test-paper
-http://localhost:3000/results/test-admin
-```
-
-If `.env` is missing, the server falls back to:
-
-```env
-ADMIN_TOKEN=parent-local-secret
-TEST_TOKEN=test-local-secret
-HOST=0.0.0.0
-PORT=3000
-```
-
-Set different tokens in `.env` before starting the app if you want different
-URLs:
-
-```env
-ADMIN_TOKEN=parent-my-secret
-TEST_TOKEN=test-my-secret
-HOST=0.0.0.0
-PORT=3000
-```
-
-For development with Node's watch mode:
+From `/workspaces/homestudenttester/frontend`:
 
 ```sh
+npm install
 npm run dev
 ```
 
-## Use On Your Wi-Fi
+Open the forwarded dev URL shown by Vite, typically `http://localhost:5174`.
 
-The app reads `.env` when you run `npm start`. To allow other devices on your Wi-Fi, keep:
+## Environment Variables
 
-```env
-HOST=0.0.0.0
-PORT=3000
-```
-
-Start the app:
-
-```sh
-npm start
-```
-
-Find your computer's Wi-Fi IP address:
-
-```sh
-hostname -I
-```
-
-Then open the student test URL on another device using that IP:
-
-```text
-http://YOUR-COMPUTER-IP:3000/take/test-paper
-```
-
-Example:
-
-```text
-http://192.168.1.25:3000/take/test-paper
-```
-
-The parent/admin URL from another device would be:
-
-```text
-http://YOUR-COMPUTER-IP:3000/admin/test-admin
-```
-
-If another device cannot connect, make sure both devices are on the same Wi-Fi and allow Node/port `3000` through your computer firewall.
-
-Set local tokens in `.env`:
+The backend supports these overrides in `.env`:
 
 ```env
-ADMIN_TOKEN=test-admin
-TEST_TOKEN=test-paper
-HOST=0.0.0.0
-PORT=3000
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MAX_TOKENS=1500
+OPENAI_TEMPERATURE=0.3
 ```
 
-## What Works
+> **Important:** `OPENAI_API_KEY` is required for test generation. Without a
+> valid key, the backend cannot call OpenAI and the test generation endpoint
+> will fail.
 
-- Parent admin page at `/admin/:adminToken`
-- Parent results page at `/results/:adminToken`
-- Student test page at `/take/:testToken`
-- Paste, parse, preview, and activate a Markdown question bank
-- Paste and parse a Markdown answer bank
-- Save student submissions to `data/app.json`
-- Clear submissions
-- Score objective `multiple_choice`, `multi_select`, and `text` answers
-- Leave `short_response` and `essay` answers marked as `Needs review`
-- Copy GPT-ready review text from the admin/results page for written-response feedback
-- Load sample question and answer banks from the admin page
+### Optional Overrides
 
-Activating a new test clears existing submissions. Saved test data, answer data,
-and submissions are stored locally in `data/app.json`.
+- `OPENAI_API_URL` — custom OpenAI API endpoint
+- `OPENAI_MODEL` — model to use for generation
+- `OPENAI_MAX_TOKENS` — maximum tokens per request
+- `OPENAI_TEMPERATURE` — response randomness
+
+## .env and Git
+
+`.env` should be local-only and not tracked in Git. If it is already tracked,
+remove it from tracking with:
+
+```sh
+git rm --cached .env
+```
+
+Then commit the change and keep `.env` listed in `.gitignore`.
+
+## API Endpoints
+
+The backend currently exposes:
+
+- `POST /api/test/generate` — create a generated test for a subject
+- `GET /api/tests` — list generated tests
+- `DELETE /api/tests/{testId}` — delete a generated test
+- `GET /api/test/html/{testId}` — serve the generated HTML for a test
+- `GET /api/health` — health check
+
+## How It Works
+
+1. Admin enters a test subject in the frontend.
+2. Frontend calls `/api/test/generate`.
+3. Backend calls OpenAI with a strong system prompt.
+4. Backend stores the returned HTML and returns a unique link.
+5. Frontend displays the unique test link in the generated tests table.
+6. Student opens `/test1`, `/test2`, etc. and sees the rendered test.
 
 ## Markdown Format
 
@@ -164,13 +127,6 @@ Passage text goes here.
 Answer banks can include `Answer:`, `Accept:`, `Points:`, `Explanation:`,
 `Rubric:`, and `Sample Answer:` fields under matching `## Question N` headings.
 For `multi_select`, separate correct answers with commas, such as `Answer: A, C`.
-
-## Sample Content
-
-The admin page has buttons to load sample question and answer banks from:
-
-- `public/sample-question-bank.md`
-- `public/sample-answer-bank.md`
 
 ## Tests
 
