@@ -130,6 +130,19 @@ For `multi_select`, separate correct answers with commas, such as `Answer: A, C`
 
 ## Tests
 
+Frontend:
+
 ```sh
+cd frontend
 npm test
 ```
+
+Backend:
+
+```sh
+cd backend
+gradle test
+```
+
+The frontend `npm test` script currently runs the production Vite build as a
+smoke test.
