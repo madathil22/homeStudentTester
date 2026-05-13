@@ -1,9 +1,13 @@
 {
-  "name": "homeStudentTester Java React DevPod",
+  "name": "homeStudentTester Spring React DevPod",
 
-  "image": "mcr.microsoft.com/devcontainers/java:21-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
 
   "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "installMaven": true
+    },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "24"
     }
