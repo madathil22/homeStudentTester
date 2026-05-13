@@ -397,5 +397,236 @@
     "parsed": {},
     "createdAt": "2026-05-12T21:10:34.701Z"
   },
-  "submissions": []
+  "submissions": [
+    {
+      "id": "33d6e75f-de51-4e89-bd72-97539f4f0e36",
+      "studentName": "Ethan abraham",
+      "submittedAt": "2026-05-13T00:03:23.529Z",
+      "answers": {
+        "1": "C",
+        "2": "C",
+        "3": "C",
+        "4": "B",
+        "5": "D",
+        "6": "C",
+        "7": "C",
+        "8": "C",
+        "9": "C",
+        "10": "C",
+        "11": "D",
+        "12": "B",
+        "13": "A, B",
+        "14": "A, C",
+        "15": "599",
+        "16": "54",
+        "17": "first you would do 3x8=24  24- 5= 19",
+        "18": "first I drew rectangle and on the short side I wrote 4 and on the long side I did 9 and did 4x9= 36"
+      },
+      "score": {
+        "earned": 0,
+        "possible": 22,
+        "byQuestion": {
+          "1": {
+            "questionNumber": "1",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "2": {
+            "questionNumber": "2",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "3": {
+            "questionNumber": "3",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "4": {
+            "questionNumber": "4",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "5": {
+            "questionNumber": "5",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "6": {
+            "questionNumber": "6",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "7": {
+            "questionNumber": "7",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "8": {
+            "questionNumber": "8",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "9": {
+            "questionNumber": "9",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "10": {
+            "questionNumber": "10",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "11": {
+            "questionNumber": "11",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "12": {
+            "questionNumber": "12",
+            "type": "multiple_choice",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "13": {
+            "questionNumber": "13",
+            "type": "multi_select",
+            "points": 2,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "14": {
+            "questionNumber": "14",
+            "type": "multi_select",
+            "points": 2,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "15": {
+            "questionNumber": "15",
+            "type": "text",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "16": {
+            "questionNumber": "16",
+            "type": "text",
+            "points": 1,
+            "earned": 0,
+            "status": "Incorrect",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "17": {
+            "questionNumber": "17",
+            "type": "short_response",
+            "points": 2,
+            "earned": null,
+            "status": "Needs review",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          },
+          "18": {
+            "questionNumber": "18",
+            "type": "short_response",
+            "points": 2,
+            "earned": null,
+            "status": "Needs review",
+            "expected": "",
+            "explanation": "",
+            "rubric": "",
+            "sampleAnswer": ""
+          }
+        },
+        "scoredAt": "2026-05-13T00:04:22.476Z"
+      }
+    }
+  ]
 }

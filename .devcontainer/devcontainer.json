@@ -1,17 +1,27 @@
 {
-  "name": "UI React Vite DevPod",
+  "name": "homeStudentTester Java React DevPod",
 
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24"
+    }
+  },
 
   "runArgs": [
     "--cpus=2",
     "--memory=4g",
     "-p",
-    "0.0.0.0:3000:3000"
+    "0.0.0.0:3000:3000",
+    "-p",
+    "0.0.0.0:5173:5173",
+    "-p",
+    "0.0.0.0:8080:8080"
   ],
 
   "mounts": [
-    "source=npm-cache,target=/home/node/.npm,type=volume"
+    "source=npm-cache,target=/home/vscode/.npm,type=volume"
   ],
 
   "containerEnv": {
@@ -25,7 +35,11 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-spring-boot",
+        "vscjava.vscode-spring-initializr",
+        "vscjava.vscode-spring-boot-dashboard"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -35,13 +49,14 @@
         "files.watcherExclude": {
           "**/.git/**": true,
           "**/node_modules/**": true,
-          "**/dist/**": true
+          "**/dist/**": true,
+          "**/target/**": true
         }
       }
     }
   },
 
-  "forwardPorts": [1455,5173,3000],
+  "forwardPorts": [1455, 5173, 8080, 3000],
 
   "portsAttributes": {
     "1455": {
@@ -52,13 +67,17 @@
       "label": "Vite Dev Server",
       "onAutoForward": "notify"
     },
+    "8080": {
+      "label": "Spring Boot API",
+      "onAutoForward": "notify"
+    },
     "3000": {
-      "label": "Node.js Server",
+      "label": "Legacy Node Server",
       "onAutoForward": "notify"
     }
   },
 
-  "postCreateCommand": "node -v && npm -v",
+  "postCreateCommand": "java -version && mvn -version && node -v && npm -v",
 
-  "remoteUser": "node"
+  "remoteUser": "vscode"
 }
