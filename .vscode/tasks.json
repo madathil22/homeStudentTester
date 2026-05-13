@@ -4,9 +4,9 @@
     {
       "label": "Backend: Spring Boot",
       "type": "shell",
-      "command": "gradle bootRun",
+      "command": "set -a && [ -f .env ] && . .env && cd backend && gradle bootRun",
       "options": {
-        "cwd": "${workspaceFolder}/backend"
+        "cwd": "${workspaceFolder}"
       },
       "isBackground": true,
       "problemMatcher": [],
