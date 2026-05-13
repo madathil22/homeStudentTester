@@ -163,21 +163,31 @@ the devcontainer rebuild.
 Recommended next implementation slice:
 
 - Create JPA entities/repositories for active tests, answer banks, and
-  submissions.
-- Add DTOs matching the legacy JSON API responses.
+  submissions. Done.
+- Add DTOs matching the legacy JSON API responses. Done.
 - Implement token validation using `app.admin-token` and `app.test-token`.
-- Implement the first compatible endpoint: `GET /api/test`.
+  Done.
+- Implement compatible legacy API endpoints. Core implementation done:
+  - `GET /api/test`
+  - `POST /api/test`
+  - `POST /api/answers`
+  - `GET /api/submissions`
+  - `POST /api/submissions`
+  - `DELETE /api/submissions`
+  - `POST /api/score`
 - Then port `parseQuestionBank`, `parseAnswerBank`, and `scoreSubmission` with
   JUnit tests copied from `test/parser-scorer.test.js`.
 
-- Port Markdown parsing from `src/markdownParser.js` into Java services.
-- Port scoring from `src/scorer.js` into Java services.
-- Replace `src/storage.js` with Spring Data JPA repositories backed by H2.
+- Port Markdown parsing from `src/markdownParser.js` into Java services. Core
+  implementation done; JUnit parity tests pending.
+- Port scoring from `src/scorer.js` into Java services. Core implementation
+  done; JUnit parity tests pending.
+- Replace `src/storage.js` with Spring Data JPA repositories backed by H2. Done.
 - Store parsed Markdown and score details as JSON text initially so the first
-  migration focuses on behavior parity before deeper relational modeling.
-- Add DTOs for tests, answers, submissions, scores, and results.
-- Implement token validation equivalent to the current `.env` behavior.
-- Add JUnit tests matching the existing parser/scorer test cases.
+  migration focuses on behavior parity before deeper relational modeling. Done.
+- Add DTOs for tests, answers, submissions, scores, and results. Done.
+- Implement token validation equivalent to the current `.env` behavior. Done.
+- Add JUnit tests matching the existing parser/scorer test cases. Pending.
 
 ## Phase 3: React Frontend
 

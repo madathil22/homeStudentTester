@@ -1,0 +1,9 @@
+backend/.gradle/
+backend/bin/
+backend/build/
+backend/data/
+
+frontend/dist/
+frontend/node_modules/
+
+.env
