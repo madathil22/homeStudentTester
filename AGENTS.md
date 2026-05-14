@@ -9,13 +9,24 @@ The current working product is a Spring Boot API plus a Vite/React frontend.
 
 The active user-facing flow is:
 
-1. A teacher opens the admin UI.
-2. The teacher enters a subject.
-3. The React frontend calls `POST /api/test/generate`.
-4. The Spring backend calls OpenAI and asks for a complete HTML test document.
-5. The backend stores that generated HTML in H2.
-6. The UI lists generated tests with stable links such as `/test1`.
-7. A student opens the link and the frontend embeds `/api/test/html/{testId}`.
+1. A teacher opens the command center.
+2. The teacher unlocks `/commandcenter` with `ADMIN_PASSWORD`.
+3. The teacher enters a full test request, such as `3 questions for 3rd grade math`.
+4. The React frontend calls `POST /api/test/generate` with `x-admin-token`.
+5. The Spring backend calls OpenAI and asks for strict JSON matching the
+   generated question-bank DTO shape.
+6. The backend validates key constraints such as exact requested question count.
+7. The backend renders that JSON into a fixed HTML test template with student
+   name, elapsed-time ticker, and submit button.
+8. The backend stores the generated HTML plus question-bank metadata in H2.
+9. The UI lists generated tests with stable links such as `/test1`.
+10. A student opens the link and the frontend embeds `/api/test/html/{testId}`.
+11. The generated HTML captures student answers and elapsed time, then posts to
+    `POST /api/test/{testId}/submit`.
+12. The backend combines stored question-bank JSON, submitted answers, and
+    timing into a scoring payload for OpenAI.
+13. The command center shows the latest result for the selected test in the
+    right-side results panel.
 
 There is also older markdown question-bank, answer-bank, submission, and scoring
 code still present in the backend. Treat it as legacy/migration scaffolding until
@@ -32,17 +43,20 @@ the product direction is clarified.
 
 Important current files:
 
-- `frontend/src/App.jsx` - admin/student routing and the main visible UI.
+- `frontend/src/App.jsx` - `/commandcenter` teacher UI, password unlock flow,
+  generated-test grid/results panel, and student iframe routing.
 - `frontend/src/api.js` - tiny fetch wrapper used by the React app.
 - `frontend/src/styles.css` - app styling.
 - `backend/src/main/java/com/homestudenttester/controller/TestApiController.java`
   - API routes for generated tests plus legacy markdown/submission endpoints.
 - `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` -
-  OpenAI chat-completions request and HTML extraction.
+  OpenAI JSON question-bank generation, backend HTML rendering, generated-test
+  answer scoring, and scoring-response normalization.
 - `backend/src/main/java/com/homestudenttester/service/AppStateService.java` -
-  H2-backed app state, generated HTML storage, legacy submissions/scoring.
+  H2-backed app state, generated HTML/question-bank/result metadata storage,
+  legacy submissions/scoring.
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` -
-  currently has auth checks disabled.
+  `ADMIN_PASSWORD` enforcement for command-center/admin APIs.
 
 ## Current API Surface
 
@@ -52,7 +66,12 @@ Generated-test flow used by the frontend:
 - `GET /api/tests` - list generated tests.
 - `DELETE /api/tests/{testId}` - delete a generated test.
 - `GET /api/test/html/{testId}` - serve stored generated HTML.
+- `POST /api/test/{testId}/submit` - submit generated-test answers for OpenAI scoring.
 - `GET /api/health` - health check.
+
+Admin routes require the `x-admin-token` header containing `ADMIN_PASSWORD`.
+Student HTML and student generated-test submissions are not admin-password
+protected.
 
 Legacy markdown/submission flow still present:
 
@@ -94,6 +113,7 @@ Required for generated tests:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
+ADMIN_PASSWORD=your_admin_password_here
 ```
 
 Optional overrides:
@@ -126,21 +146,20 @@ on system `gradle`.
 
 ## Known Gaps
 
-- Auth checks are disabled in `AuthService`, even though older planning notes
-  mention token validation.
 - `PROJECT_PLAN.md` still describes the earlier Node-to-Spring markdown app
   migration and should not be treated as the latest product spec.
-- The README's active flow is newer than parts of the backend implementation.
-- Generated tests are stored as raw HTML. Be careful with any changes that alter
-  rendering, sanitization, or origin boundaries.
-- The frontend iframe currently points directly at stored HTML and does not
-  collect student answers.
+- Generated tests are stored as raw HTML plus JSON metadata. Be careful with any
+  changes that alter rendering, sanitization, origin boundaries, answer capture,
+  or the shape of stored question-bank/result metadata.
+- The command center stores the entered admin password in browser
+  `sessionStorage` and sends it as `x-admin-token`; there is not yet a real
+  session/token system.
 - Parser/scorer parity tests for the legacy markdown path are not implemented.
 
 ## Working Rules
 
-- Prefer the generated-HTML flow unless the user explicitly asks to revive or
-  complete the markdown/submission/scoring workflow.
+- Prefer the generated JSON question-bank flow unless the user explicitly asks
+  to revive or complete the markdown/submission/scoring workflow.
 - Keep `.env` private and avoid printing secrets.
 - Do not remove legacy markdown/scoring code casually; it may represent planned
   functionality.

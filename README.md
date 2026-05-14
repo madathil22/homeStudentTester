@@ -1,22 +1,63 @@
 # homeStudentTester
 
-A family-use test-generation and test-taking app powered by Spring Boot and Vite.
-The current flow generates a unique HTML test for each subject via OpenAI, saves
-it in the backend, and exposes a unique student route per generated test.
+> Local family-use test generation, test taking, and AI-assisted scoring.
 
-## Current State
+`homeStudentTester` turns a teacher request into a structured JSON question bank
+with OpenAI, renders that data into a consistent HTML test page, stores the test
+locally in H2, and gives students a stable link such as `/test1`.
 
-- Backend is Spring Boot (Java 21) and stores generated test HTML in H2.
-- Frontend is Vite + React and runs on `localhost:5173` / devpod forwarded port.
-- Unique links are generated per subject, for example:
-  - `/test1`
-  - `/test2`
-- The admin UI can create tests, list generated subjects, and delete them inline.
-- Student routes render the generated HTML page for the requested test ID.
+## 🔎 Overview
 
-## Run Locally
+| Area | Details |
+| --- | --- |
+| Teacher UI | `/commandcenter`, locked with `ADMIN_PASSWORD` |
+| Student UI | Stable generated links such as `/test1`, `/test2` |
+| Backend | Spring Boot 3.3.5, Java 21, H2 |
+| Frontend | React 18, Vite, lucide-react |
+| AI flow | OpenAI JSON question generation and scoring |
+| Storage | Generated HTML plus question-bank/result metadata |
 
-### Backend
+## 🧭 Flow
+
+1. Teacher opens `/commandcenter`.
+2. Teacher unlocks the command center with `ADMIN_PASSWORD`.
+3. Teacher enters a full request, for example `3 questions for 3rd grade math`.
+4. Backend asks OpenAI for strict JSON matching the question-bank shape.
+5. Backend validates constraints such as exact requested question count.
+6. Backend renders the JSON into a fixed HTML template with:
+   - student name field
+   - elapsed-time ticker
+   - answer inputs
+   - submit button
+7. Student opens the generated link and submits answers.
+8. Backend sends the stored question bank, submitted answers, and timing to
+   OpenAI for scoring.
+9. The command center displays the selected test's result summary and
+   wrong-answer details.
+
+## ⚡ Quick Start
+
+### 🔐 1. Configure `.env`
+
+Create a local `.env` at the workspace root:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+ADMIN_PASSWORD=your_admin_password_here
+```
+
+Optional overrides:
+
+```env
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MAX_TOKENS=1500
+OPENAI_TEMPERATURE=0.3
+```
+
+Keep `.env` private. It is ignored by Git.
+
+### 🧩 2. Start The Backend
 
 From `/workspaces/homestudenttester/backend`:
 
@@ -24,10 +65,10 @@ From `/workspaces/homestudenttester/backend`:
 gradle bootRun
 ```
 
-The backend reads `.env` from the workspace root when launched from the VS Code
-task configured to source `.env`.
+The VS Code backend task sources the workspace-root `.env` before starting
+Spring Boot.
 
-### Frontend
+### 🖥️ 3. Start The Frontend
 
 From `/workspaces/homestudenttester/frontend`:
 
@@ -36,67 +77,122 @@ npm install
 npm run dev
 ```
 
-Open the forwarded dev URL shown by Vite, typically `http://localhost:5174`.
+Open the Vite URL, typically `http://localhost:5173`, then navigate to
+`/commandcenter`.
 
-## Environment Variables
+## 🎛️ Command Center
 
-The backend supports these overrides in `.env`:
+The command center is the teacher workspace.
 
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_MAX_TOKENS=1500
-OPENAI_TEMPERATURE=0.3
+- Unlocks with `ADMIN_PASSWORD`.
+- Creates generated tests from natural-language requests.
+- Shows generation progress.
+- Lists generated tests in a selectable grid.
+- Opens or deletes generated test links.
+- Shows a right-side results panel for the selected test.
+
+Result details include:
+
+- number of questions
+- total time taken
+- average time per question
+- final score
+- wrong-answer feedback
+
+## 📝 Student Experience
+
+Students open links like `/test1`.
+
+The generated page includes:
+
+- the test title and instructions
+- student name field
+- questions rendered from JSON
+- elapsed-time ticker
+- submit button
+
+On submit, the page sends answers and elapsed time to the backend. The backend
+scores the submission through OpenAI and stores the latest result for the
+teacher to review.
+
+## 🔌 API Reference
+
+Teacher endpoints require the `x-admin-token` header containing
+`ADMIN_PASSWORD`.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/test/generate` | Create a generated test from a teacher request |
+| `GET` | `/api/tests` | List generated tests and latest results |
+| `DELETE` | `/api/tests/{testId}` | Delete a generated test |
+| `GET` | `/api/test/html/{testId}` | Serve stored generated HTML |
+| `POST` | `/api/test/{testId}/submit` | Submit student answers for scoring |
+| `GET` | `/api/health` | Health check |
+
+Student HTML and student submissions do not require the admin password.
+
+## 🧱 Generated Question JSON
+
+OpenAI returns JSON shaped around the existing DTOs:
+
+```json
+{
+  "title": "string",
+  "instructions": "string",
+  "passages": [
+    { "id": "p1", "title": "string", "body": "string" }
+  ],
+  "questions": [
+    {
+      "number": "1",
+      "type": "multiple_choice",
+      "points": 1,
+      "prompt": "string",
+      "options": [
+        { "label": "A", "text": "string" }
+      ],
+      "passageIds": []
+    }
+  ]
+}
 ```
 
-> **Important:** `OPENAI_API_KEY` is required for test generation. Without a
-> valid key, the backend cannot call OpenAI and the test generation endpoint
-> will fail.
+Supported generated question types:
 
-### Optional Overrides
+- `multiple_choice`
+- `multi_select`
+- `free_text`
 
-- `OPENAI_API_URL` — custom OpenAI API endpoint
-- `OPENAI_MODEL` — model to use for generation
-- `OPENAI_MAX_TOKENS` — maximum tokens per request
-- `OPENAI_TEMPERATURE` — response randomness
+The backend also normalizes text-style aliases such as `short_answer`,
+`short_response`, `essay`, and `text` to `free_text`.
 
-## .env and Git
+## 📁 Project Layout
 
-`.env` should be local-only and not tracked in Git. If it is already tracked,
-remove it from tracking with:
-
-```sh
-git rm --cached .env
+```txt
+backend/   Spring Boot API, OpenAI integration, H2 persistence
+frontend/  React command center and student route wrapper
+.vscode/   Convenience tasks
 ```
 
-Then commit the change and keep `.env` listed in `.gitignore`.
+Important files:
 
-## API Endpoints
+- `frontend/src/App.jsx` - command center, student route, results panel
+- `frontend/src/api.js` - fetch helper
+- `frontend/src/styles.css` - app styling
+- `backend/src/main/java/com/homestudenttester/controller/TestApiController.java` - API routes
+- `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` - OpenAI generation/scoring and HTML rendering
+- `backend/src/main/java/com/homestudenttester/service/AppStateService.java` - H2-backed generated-test state
+- `backend/src/main/java/com/homestudenttester/service/AuthService.java` - admin password enforcement
 
-The backend currently exposes:
+## 🗃️ Legacy Markdown Format
 
-- `POST /api/test/generate` — create a generated test for a subject
-- `GET /api/tests` — list generated tests
-- `DELETE /api/tests/{testId}` — delete a generated test
-- `GET /api/test/html/{testId}` — serve the generated HTML for a test
-- `GET /api/health` — health check
-
-## How It Works
-
-1. Admin enters a test subject in the frontend.
-2. Frontend calls `/api/test/generate`.
-3. Backend calls OpenAI with a strong system prompt.
-4. Backend stores the returned HTML and returns a unique link.
-5. Frontend displays the unique test link in the generated tests table.
-6. Student opens `/test1`, `/test2`, etc. and sees the rendered test.
-
-## Markdown Format
+Older markdown question-bank, answer-bank, submission, and scoring code still
+exists as migration scaffolding.
 
 Question banks must start with a `#` title and include at least one
 `## Question N` section.
 
-Supported question types:
+Supported legacy question types:
 
 - `multiple_choice`
 - `multi_select`
@@ -104,7 +200,7 @@ Supported question types:
 - `essay`
 - `text`
 
-Each question supports:
+Example:
 
 ```md
 ## Question 1
@@ -117,18 +213,10 @@ A. First option
 B. Second option
 ```
 
-Passages can be added with:
-
-```md
-## Passage: Passage Title
-Passage text goes here.
-```
-
 Answer banks can include `Answer:`, `Accept:`, `Points:`, `Explanation:`,
 `Rubric:`, and `Sample Answer:` fields under matching `## Question N` headings.
-For `multi_select`, separate correct answers with commas, such as `Answer: A, C`.
 
-## Tests
+## ✅ Verification
 
 Frontend:
 
@@ -144,5 +232,5 @@ cd backend
 gradle test
 ```
 
-The frontend `npm test` script currently runs the production Vite build as a
-smoke test.
+There is no Gradle wrapper checked in yet, so backend commands depend on system
+`gradle`.
