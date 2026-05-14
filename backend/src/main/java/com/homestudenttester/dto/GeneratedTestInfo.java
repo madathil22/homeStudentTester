@@ -4,5 +4,6 @@ public record GeneratedTestInfo(
         String id,
         String subject,
         String link,
-        String createdAt) {
+        String createdAt,
+        GeneratedTestResult result) {
 }

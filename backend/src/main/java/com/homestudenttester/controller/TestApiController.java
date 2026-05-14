@@ -2,6 +2,8 @@ package com.homestudenttester.controller;
 
 import com.homestudenttester.dto.BankDocument;
 import com.homestudenttester.dto.GenerateTestRequest;
+import com.homestudenttester.dto.GeneratedTestSubmission;
+import com.homestudenttester.dto.GeneratedTestSubmissionRequest;
 import com.homestudenttester.dto.QuestionBank;
 import com.homestudenttester.dto.SaveMarkdownRequest;
 import com.homestudenttester.dto.SaveSubmissionRequest;
@@ -10,6 +12,7 @@ import com.homestudenttester.service.AuthService;
 import com.homestudenttester.service.OpenAiService;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,8 +67,8 @@ public class TestApiController {
       @RequestBody(required = false) GenerateTestRequest request) {
     authService.requireAdmin(adminToken);
     String subject = request == null || request.subject() == null ? "" : request.subject();
-    String html = openAiService.generateTestHtml(subject);
-    var generatedTest = appStateService.saveGeneratedTestHtml(subject, html);
+    var generatedDocument = openAiService.generateTest(subject);
+    var generatedTest = appStateService.saveGeneratedTest(subject, generatedDocument);
     return Map.of(
         "testLink", generatedTest.link(),
         "testId", generatedTest.id(),
@@ -94,6 +97,33 @@ public class TestApiController {
     return appStateService.generatedTestHtml(testId)
         .map(html -> ResponseEntity.ok().body(html))
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PostMapping("/api/test/{testId}/submit")
+  public Map<String, Object> submitGeneratedTest(
+      @PathVariable String testId,
+      @RequestBody(required = false) GeneratedTestSubmissionRequest request) {
+    var metadata = appStateService.generatedTestMetadata(testId);
+    if (metadata.questionBank() == null) {
+      throw new IllegalStateException("Generated test does not have question-bank JSON available for scoring.");
+    }
+    GeneratedTestSubmissionRequest safeRequest = request == null
+        ? new GeneratedTestSubmissionRequest("", Map.of(), 0)
+        : request;
+    String studentName = safeRequest.studentName() == null ? "" : safeRequest.studentName().trim();
+    if (studentName.isBlank()) {
+      throw new IllegalArgumentException("Student name is required.");
+    }
+    GeneratedTestSubmission submission = new GeneratedTestSubmission(
+        studentName,
+        safeRequest.answers() == null ? Map.of() : safeRequest.answers(),
+        Math.max(0, safeRequest.elapsedSeconds()),
+        Instant.now());
+    var result = openAiService.scoreGeneratedTest(metadata.questionBank(), submission);
+    var generatedTest = appStateService.saveGeneratedTestResult(testId, submission, result);
+    return Map.of(
+        "test", generatedTest,
+        "result", result);
   }
 
   @PostMapping("/api/answers")

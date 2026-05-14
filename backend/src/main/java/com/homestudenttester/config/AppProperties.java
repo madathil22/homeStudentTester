@@ -8,5 +8,6 @@ public record AppProperties(
         String openAiApiUrl,
         String openAiModel,
         int openAiMaxTokens,
-        double openAiTemperature) {
+        double openAiTemperature,
+        String adminPassword) {
 }

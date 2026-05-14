@@ -7,7 +7,9 @@ export async function apiRequest(path, options = {}) {
 
   if (!response.ok) {
     const message = typeof data === 'object' && data?.error ? data.error : 'Request failed';
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

@@ -5,7 +5,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.homestudenttester.dto.AnswerInfo;
 import com.homestudenttester.dto.BankDocument;
+import com.homestudenttester.dto.GeneratedTestDocument;
 import com.homestudenttester.dto.GeneratedTestInfo;
+import com.homestudenttester.dto.GeneratedTestMetadata;
+import com.homestudenttester.dto.GeneratedTestResult;
+import com.homestudenttester.dto.GeneratedTestSubmission;
 import com.homestudenttester.dto.QuestionBank;
 import com.homestudenttester.dto.SaveSubmissionRequest;
 import com.homestudenttester.dto.ScoreResult;
@@ -91,15 +95,20 @@ public class AppStateService {
   }
 
   @Transactional
-  public GeneratedTestInfo saveGeneratedTestHtml(String subject, String html) {
+  public GeneratedTestInfo saveGeneratedTest(String subject, GeneratedTestDocument generatedTest) {
     String id = nextGeneratedTestId();
+    GeneratedTestMetadata metadata = new GeneratedTestMetadata(
+        subject,
+        generatedTest.questionBank(),
+        null,
+        null);
     StoredDocument document = new StoredDocument(
         id,
-        html,
-        writeJson(Map.of("subject", subject)),
+        generatedTest.html(),
+        writeJson(metadata),
         Instant.now());
     documentRepository.save(document);
-    return new GeneratedTestInfo(id, subject, "/" + id, document.getCreatedAt().toString());
+    return toGeneratedTestInfo(document);
   }
 
   public Optional<String> generatedTestHtml(String id) {
@@ -108,18 +117,38 @@ public class AppStateService {
         .map(StoredDocument::getRawMarkdown);
   }
 
+  public GeneratedTestMetadata generatedTestMetadata(String id) {
+    return documentRepository.findById(id)
+        .filter(document -> document.getId().startsWith(GENERATED_TEST_PREFIX))
+        .map(this::readGeneratedTestMetadata)
+        .orElseThrow(() -> new IllegalArgumentException("Generated test not found."));
+  }
+
+  @Transactional
+  public GeneratedTestInfo saveGeneratedTestResult(
+      String id,
+      GeneratedTestSubmission submission,
+      GeneratedTestResult result) {
+    StoredDocument existing = documentRepository.findById(id)
+        .filter(document -> document.getId().startsWith(GENERATED_TEST_PREFIX))
+        .orElseThrow(() -> new IllegalArgumentException("Generated test not found."));
+    GeneratedTestMetadata existingMetadata = readGeneratedTestMetadata(existing);
+    GeneratedTestMetadata updatedMetadata = new GeneratedTestMetadata(
+        existingMetadata.subject(),
+        existingMetadata.questionBank(),
+        submission,
+        result);
+    StoredDocument updated = new StoredDocument(
+        existing.getId(),
+        existing.getRawMarkdown(),
+        writeJson(updatedMetadata),
+        existing.getCreatedAt());
+    return toGeneratedTestInfo(documentRepository.save(updated));
+  }
+
   public List<GeneratedTestInfo> generatedTests() {
     return documentRepository.findByIdStartingWith(GENERATED_TEST_PREFIX).stream()
-        .map(document -> {
-          Map<String, String> metadata = readJson(document.getParsedJson(), new TypeReference<Map<String, String>>() {
-          });
-          String subject = metadata.getOrDefault("subject", "Unknown subject");
-          return new GeneratedTestInfo(
-              document.getId(),
-              subject,
-              "/" + document.getId(),
-              document.getCreatedAt().toString());
-        })
+        .map(this::toGeneratedTestInfo)
         .sorted((a, b) -> b.createdAt().compareTo(a.createdAt()))
         .toList();
   }
@@ -147,6 +176,38 @@ public class AppStateService {
         .max()
         .orElse(0L);
     return GENERATED_TEST_PREFIX + (number + 1);
+  }
+
+  private GeneratedTestInfo toGeneratedTestInfo(StoredDocument document) {
+    GeneratedTestMetadata metadata = readGeneratedTestMetadata(document);
+    String subject = metadata.subject() == null || metadata.subject().isBlank()
+        ? "Unknown subject"
+        : metadata.subject();
+    return new GeneratedTestInfo(
+        document.getId(),
+        subject,
+        "/" + document.getId(),
+        document.getCreatedAt().toString(),
+        metadata.result());
+  }
+
+  private GeneratedTestMetadata readGeneratedTestMetadata(StoredDocument document) {
+    try {
+      GeneratedTestMetadata metadata = objectMapper.readValue(document.getParsedJson(), GeneratedTestMetadata.class);
+      if (metadata.subject() != null || metadata.questionBank() != null || metadata.result() != null) {
+        return metadata;
+      }
+    } catch (JsonProcessingException ignored) {
+      // Fall through to the legacy metadata shape used before generated tests stored question-bank JSON.
+    }
+
+    Map<String, String> legacyMetadata = readJson(document.getParsedJson(), new TypeReference<Map<String, String>>() {
+    });
+    return new GeneratedTestMetadata(
+        legacyMetadata.getOrDefault("subject", "Unknown subject"),
+        null,
+        null,
+        null);
   }
 
   public List<SubmissionDto> submissions() {
