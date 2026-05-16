@@ -3,10 +3,12 @@ server:
 
 app:
   openai-key: ${OPENAI_API_KEY:}
-  openai-api-url: ${OPENAI_API_URL:https://api.openai.com/v1/chat/completions}
-  openai-model: ${OPENAI_MODEL:gpt-4.1-mini}
-  openai-max-tokens: ${OPENAI_MAX_TOKENS:1500}
-  openai-temperature: ${OPENAI_TEMPERATURE:0.3}
+  openai-api-url: ${OPENAI_API_URL:https://api.openai.com/v1/responses}
+  openai-model: ${OPENAI_MODEL:gpt-5.4-mini}
+  openai-fallback-model: ${OPENAI_FALLBACK_MODEL:gpt-5.5}
+  openai-max-output-tokens: ${OPENAI_MAX_OUTPUT_TOKENS:8000}
+  openai-reasoning-effort: ${OPENAI_REASONING_EFFORT:low}
+  openai-store: ${OPENAI_STORE:false}
   admin-password: ${ADMIN_PASSWORD:}
 
 spring:

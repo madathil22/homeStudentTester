@@ -8,14 +8,14 @@ locally in H2, and gives students a stable link such as `/test1`.
 
 ## 🔎 Overview
 
-| Area | Details |
-| --- | --- |
-| Teacher UI | `/commandcenter`, locked with `ADMIN_PASSWORD` |
+| Area       | Details                                           |
+| ---------- | ------------------------------------------------- |
+| Teacher UI | `/commandcenter`, locked with `ADMIN_PASSWORD`    |
 | Student UI | Stable generated links such as `/test1`, `/test2` |
-| Backend | Spring Boot 3.3.5, Java 21, H2 |
-| Frontend | React 18, Vite, lucide-react |
-| AI flow | OpenAI JSON question generation and scoring |
-| Storage | Generated HTML plus question-bank/result metadata |
+| Backend    | Spring Boot 3.3.5, Java 21, H2                    |
+| Frontend   | React 18, Vite, lucide-react                      |
+| AI flow    | OpenAI JSON question generation and scoring       |
+| Storage    | Generated HTML plus question-bank/result metadata |
 
 ## 🧭 Flow
 
@@ -52,13 +52,15 @@ OPENAI_API_KEY=your_openai_api_key_here
 ADMIN_PASSWORD=your_admin_password_here
 ```
 
-Optional overrides:
+Optional overrides (Responses API recommended):
 
 ```env
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_MAX_TOKENS=1500
-OPENAI_TEMPERATURE=0.3
+OPENAI_API_URL=https://api.openai.com/v1/responses
+OPENAI_MODEL=gpt-5.4-mini
+OPENAI_FALLBACK_MODEL=gpt-5.5
+OPENAI_MAX_OUTPUT_TOKENS=8000
+OPENAI_REASONING_EFFORT=low
+OPENAI_STORE=false
 ```
 
 Keep `.env` private. It is ignored by Git.
@@ -128,14 +130,14 @@ teacher to review.
 Teacher endpoints require the `x-admin-token` header containing
 `ADMIN_PASSWORD`.
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/test/generate` | Create a generated test from a teacher request |
-| `GET` | `/api/tests` | List generated tests and latest results |
-| `DELETE` | `/api/tests/{testId}` | Delete a generated test |
-| `GET` | `/api/test/html/{testId}` | Serve stored generated HTML |
-| `POST` | `/api/test/{testId}/submit` | Submit student answers for scoring |
-| `GET` | `/api/health` | Health check |
+| Method   | Endpoint                    | Purpose                                        |
+| -------- | --------------------------- | ---------------------------------------------- |
+| `POST`   | `/api/test/generate`        | Create a generated test from a teacher request |
+| `GET`    | `/api/tests`                | List generated tests and latest results        |
+| `DELETE` | `/api/tests/{testId}`       | Delete a generated test                        |
+| `GET`    | `/api/test/html/{testId}`   | Serve stored generated HTML                    |
+| `POST`   | `/api/test/{testId}/submit` | Submit student answers for scoring             |
+| `GET`    | `/api/health`               | Health check                                   |
 
 Student HTML and student submissions do not require the admin password.
 
@@ -147,18 +149,14 @@ OpenAI returns JSON shaped around the existing DTOs:
 {
   "title": "string",
   "instructions": "string",
-  "passages": [
-    { "id": "p1", "title": "string", "body": "string" }
-  ],
+  "passages": [{ "id": "p1", "title": "string", "body": "string" }],
   "questions": [
     {
       "number": "1",
       "type": "multiple_choice",
       "points": 1,
       "prompt": "string",
-      "options": [
-        { "label": "A", "text": "string" }
-      ],
+      "options": [{ "label": "A", "text": "string" }],
       "passageIds": []
     }
   ]

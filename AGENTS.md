@@ -105,13 +105,15 @@ OPENAI_API_KEY=your_openai_api_key_here
 ADMIN_PASSWORD=your_admin_password_here
 ```
 
-Optional overrides:
+Optional overrides (Responses API recommended):
 
 ```env
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_MAX_TOKENS=1500
-OPENAI_TEMPERATURE=0.3
+OPENAI_API_URL=https://api.openai.com/v1/responses
+OPENAI_MODEL=gpt-5.4-mini
+OPENAI_FALLBACK_MODEL=gpt-5.5
+OPENAI_MAX_OUTPUT_TOKENS=8000
+OPENAI_REASONING_EFFORT=low
+OPENAI_STORE=false
 ```
 
 Do not commit `.env`; it is ignored by `.gitignore`.
@@ -160,6 +162,7 @@ on system `gradle`.
 - The command center stores the entered admin password in browser
   `sessionStorage` and sends it as `x-admin-token`; there is not yet a real
   session/token system.
+
 ## Working Rules
 
 - Prefer the generated JSON question-bank flow; it is now the only supported
