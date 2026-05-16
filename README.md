@@ -198,38 +198,6 @@ Important files:
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` - admin password enforcement
 - `backend/src/main/java/com/homestudenttester/controller/ApiExceptionHandler.java` - API error mapping and backend error logging
 
-## 🗃️ Legacy Markdown Format
-
-Older markdown question-bank, answer-bank, submission, and scoring code still
-exists as migration scaffolding.
-
-Question banks must start with a `#` title and include at least one
-`## Question N` section.
-
-Supported legacy question types:
-
-- `multiple_choice`
-- `multi_select`
-- `short_response`
-- `essay`
-- `text`
-
-Example:
-
-```md
-## Question 1
-Type: multiple_choice
-Points: 1
-
-Question prompt goes here.
-
-A. First option
-B. Second option
-```
-
-Answer banks can include `Answer:`, `Accept:`, `Points:`, `Explanation:`,
-`Rubric:`, and `Sample Answer:` fields under matching `## Question N` headings.
-
 ## ✅ Verification
 
 Frontend:

@@ -30,10 +30,6 @@ The active user-facing flow is:
 13. The command center shows the latest result for the selected test in the
     right-side results panel.
 
-There is also older markdown question-bank, answer-bank, submission, and scoring
-code still present in the backend. Treat it as legacy/migration scaffolding until
-the product direction is clarified.
-
 ## Repository Layout
 
 - `backend/` - Spring Boot 3.3.5 API, Java 21, Gradle, H2 persistence.
@@ -49,14 +45,13 @@ Important current files:
 - `frontend/src/api.js` - tiny fetch wrapper used by the React app.
 - `frontend/src/styles.css` - app styling.
 - `backend/src/main/java/com/homestudenttester/controller/TestApiController.java`
-  - API routes for generated tests plus legacy markdown/submission endpoints.
+  - API routes for generated tests.
 - `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` -
   OpenAI JSON question-bank generation, backend HTML rendering, generated-test
   answer scoring, MathJax-enabled test rendering, and scoring-response
   normalization.
 - `backend/src/main/java/com/homestudenttester/service/AppStateService.java` -
-  H2-backed app state, generated HTML/question-bank/result metadata storage,
-  legacy submissions/scoring.
+  H2-backed generated HTML/question-bank/result metadata storage.
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` -
   `ADMIN_PASSWORD` enforcement for command-center/admin APIs.
 - `backend/src/main/java/com/homestudenttester/controller/ApiExceptionHandler.java`
@@ -76,16 +71,6 @@ Generated-test flow used by the frontend:
 Admin routes require the `x-admin-token` header containing `ADMIN_PASSWORD`.
 Student HTML and student generated-test submissions are not admin-password
 protected.
-
-Legacy markdown/submission flow still present:
-
-- `GET /api/test`
-- `POST /api/test`
-- `POST /api/answers`
-- `GET /api/submissions`
-- `POST /api/submissions`
-- `DELETE /api/submissions`
-- `POST /api/score`
 
 ## Run Commands
 
@@ -175,15 +160,11 @@ on system `gradle`.
 - The command center stores the entered admin password in browser
   `sessionStorage` and sends it as `x-admin-token`; there is not yet a real
   session/token system.
-- Parser/scorer parity tests for the legacy markdown path are not implemented.
-
 ## Working Rules
 
-- Prefer the generated JSON question-bank flow unless the user explicitly asks
-  to revive or complete the markdown/submission/scoring workflow.
+- Prefer the generated JSON question-bank flow; it is now the only supported
+  product path.
 - Keep `.env` private and avoid printing secrets.
-- Do not remove legacy markdown/scoring code casually; it may represent planned
-  functionality.
 - Keep changes small and aligned with the current UI before doing broad cleanup.
 - If adding backend features, update `README.md` and this file when the handoff
   story changes.
