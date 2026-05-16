@@ -29,7 +29,74 @@ function formatScore(result) {
   return `${result.earned}/${result.possible}`;
 }
 
+function parseGeneratedTestRequest(request = '') {
+  const questionMatch = request.match(
+    /^(\d+)\s+questions for (.+?) (math|english reading|english writing) aligned to ([A-Z]{2}) standards\. Topic: (.+)\.$/i
+  );
+  if (questionMatch) {
+    return {
+      gradeLevel: questionMatch[2],
+      subject: formatSubjectLabel(questionMatch[3]),
+      type: `${questionMatch[1]} questions`,
+      topic: questionMatch[5]
+    };
+  }
+
+  const timeMatch = request.match(
+    /^a (\d+)-minute time-bound test for (.+?) (math|english reading|english writing) aligned to ([A-Z]{2}) standards\. Topic: (.+)\.$/i
+  );
+  if (timeMatch) {
+    return {
+      gradeLevel: timeMatch[2],
+      subject: formatSubjectLabel(timeMatch[3]),
+      type: `${timeMatch[1]} minutes`,
+      topic: timeMatch[5]
+    };
+  }
+
+  return {
+    gradeLevel: '-',
+    subject: '-',
+    type: '-',
+    topic: request || '-'
+  };
+}
+
+function formatSubjectLabel(subject) {
+  return subject
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 const ADMIN_PASSWORD_STORAGE_KEY = 'homestudenttester.adminPassword';
+const STATE_OPTIONS = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
+];
+const GRADE_OPTIONS = [
+  'Kindergarten',
+  '1st grade',
+  '2nd grade',
+  '3rd grade',
+  '4th grade',
+  '5th grade',
+  '6th grade',
+  '7th grade',
+  '8th grade',
+  '9th grade',
+  '10th grade',
+  '11th grade',
+  '12th grade'
+];
+const SUBJECT_OPTIONS = [
+  { value: 'math', label: 'Math' },
+  { value: 'english reading', label: 'English Reading' },
+  { value: 'english writing', label: 'English Writing' }
+];
 
 export function App() {
   const { route, id } = useMemo(getRoute, []);
@@ -41,7 +108,13 @@ export function App() {
 function AdminApp() {
   const [status, setStatus] = useState('Ready to manage test subjects.');
   const [health, setHealth] = useState(null);
-  const [subject, setSubject] = useState('');
+  const [state, setState] = useState('NJ');
+  const [gradeLevel, setGradeLevel] = useState('');
+  const [subjectArea, setSubjectArea] = useState('');
+  const [lengthMode, setLengthMode] = useState('questions');
+  const [questionCount, setQuestionCount] = useState('');
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState('');
+  const [topic, setTopic] = useState('');
   const [tests, setTests] = useState([]);
   const [selectedTestId, setSelectedTestId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -108,10 +181,25 @@ function AdminApp() {
   }
 
   async function createTest() {
-    if (!subject.trim()) {
-      setStatus('Test subject is required.');
+    if (!state || !gradeLevel || !subjectArea || !topic.trim()) {
+      setStatus('State, grade level, subject, and test topic are required.');
       return;
     }
+
+    if (lengthMode === 'questions' && (!questionCount || Number(questionCount) < 1)) {
+      setStatus('Enter a question count of at least 1.');
+      return;
+    }
+
+    if (lengthMode === 'time' && (!timeLimitMinutes || Number(timeLimitMinutes) < 1)) {
+      setStatus('Enter a time limit of at least 1 minute.');
+      return;
+    }
+
+    const lengthInstruction = lengthMode === 'questions'
+      ? `${questionCount} questions`
+      : `a ${timeLimitMinutes}-minute time-bound test`;
+    const normalizedRequest = `${lengthInstruction} for ${gradeLevel} ${subjectArea} aligned to ${state} standards. Topic: ${topic.trim()}.`;
 
     setLoading(true);
     setGenerationStage('prompt');
@@ -123,11 +211,13 @@ function AdminApp() {
       await apiRequest('/api/test/generate', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...adminHeaders() },
-        body: JSON.stringify({ subject: subject.trim() })
+        body: JSON.stringify({ subject: normalizedRequest })
       });
       setGenerationStage('publish');
       setStatus('Publishing student link...');
-      setSubject('');
+      setQuestionCount('');
+      setTimeLimitMinutes('');
+      setTopic('');
       await refreshTests();
       setGenerationStage('done');
       setStatus('New test subject created.');
@@ -187,17 +277,68 @@ function AdminApp() {
             </div>
             <ClipboardList size={22} aria-hidden="true" />
           </div>
-          <p className="helper-text">Enter the full request, including subject, grade level, and question count when needed.</p>
-          <div className="request-row">
-            <label className="field request-field">
-              <span>Test request</span>
+          <p className="helper-text">Fill in the required test details before generating a student link.</p>
+          <div className="request-form-grid">
+            <label className="field">
+              <span>State</span>
+              <select value={state} onChange={(event) => setState(event.target.value)}>
+                {STATE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Grade level</span>
+              <select value={gradeLevel} onChange={(event) => setGradeLevel(event.target.value)}>
+                <option value="">Select grade</option>
+                {GRADE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Subject</span>
+              <select value={subjectArea} onChange={(event) => setSubjectArea(event.target.value)}>
+                <option value="">Select subject</option>
+                {SUBJECT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Length type</span>
+              <select value={lengthMode} onChange={(event) => setLengthMode(event.target.value)}>
+                <option value="questions">Number of questions</option>
+                <option value="time">Time-bound</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>{lengthMode === 'questions' ? 'Questions' : 'Minutes'}</span>
               <input
-                type="text"
-                value={subject}
-                onChange={(event) => setSubject(event.target.value)}
-                placeholder="e.g. 3 questions for 3rd grade math"
+                type="number"
+                min="1"
+                value={lengthMode === 'questions' ? questionCount : timeLimitMinutes}
+                onChange={(event) => {
+                  if (lengthMode === 'questions') {
+                    setQuestionCount(event.target.value);
+                  } else {
+                    setTimeLimitMinutes(event.target.value);
+                  }
+                }}
+                placeholder={lengthMode === 'questions' ? 'e.g. 10' : 'e.g. 30'}
               />
             </label>
+            <label className="field topic-field">
+              <span>Test topic</span>
+              <input
+                type="text"
+                value={topic}
+                onChange={(event) => setTopic(event.target.value)}
+                placeholder="e.g. 3 digit addition"
+              />
+            </label>
+          </div>
+          <div className="request-actions">
             <button type="button" onClick={createTest} disabled={loading}>
               {loading ? <LoaderCircle className="spin" size={18} aria-hidden="true" /> : <FileQuestion size={18} aria-hidden="true" />}
               {loading ? 'Creating' : 'Create Test'}
@@ -232,58 +373,64 @@ function AdminApp() {
           ) : (
             <div className="data-grid" role="grid" aria-label="Generated tests">
               <div className="data-grid-header" role="row">
-                <span role="columnheader">Request</span>
-                <span role="columnheader">Created</span>
+                <span role="columnheader">Grade Level</span>
+                <span role="columnheader">Subject</span>
+                <span role="columnheader">Type</span>
+                <span role="columnheader">Topic</span>
                 <span role="columnheader">Score</span>
                 <span role="columnheader">Actions</span>
               </div>
-              {tests.map((test) => (
-                <div
-                  className={`data-grid-row ${selectedTest?.id === test.id ? 'selected' : ''}`}
-                  role="row"
-                  tabIndex={0}
-                  key={test.id}
-                  onClick={() => setSelectedTestId(test.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      setSelectedTestId(test.id);
-                    }
-                  }}
-                >
-                  <span className="subject-cell" role="gridcell">
-                    <strong>{test.subject}</strong>
-                    <small>{test.link}</small>
-                  </span>
-                  <span role="gridcell">{new Date(test.createdAt).toLocaleDateString()}</span>
-                  <span role="gridcell">
-                    <ScoreBadge result={test.result} />
-                  </span>
-                  <span className="row-actions" role="gridcell">
-                    <a
-                      href={new URL(test.link, window.location.origin).toString()}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Open ${test.subject}`}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <ExternalLink size={16} aria-hidden="true" />
-                    </a>
-                    <button
-                      className="danger icon-button"
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        deleteTest(test.id);
-                      }}
-                      disabled={loading}
-                      aria-label={`Delete ${test.subject}`}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </button>
-                  </span>
-                </div>
-              ))}
+              {tests.map((test) => {
+                const requestDetails = parseGeneratedTestRequest(test.subject);
+                return (
+                  <div
+                    className={`data-grid-row ${selectedTest?.id === test.id ? 'selected' : ''}`}
+                    role="row"
+                    tabIndex={0}
+                    key={test.id}
+                    onClick={() => setSelectedTestId(test.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedTestId(test.id);
+                      }
+                    }}
+                  >
+                    <span role="gridcell">{requestDetails.gradeLevel}</span>
+                    <span role="gridcell">{requestDetails.subject}</span>
+                    <span role="gridcell">{requestDetails.type}</span>
+                    <span className="topic-cell" role="gridcell" title={requestDetails.topic}>
+                      {requestDetails.topic}
+                    </span>
+                    <span role="gridcell">
+                      <ScoreBadge result={test.result} />
+                    </span>
+                    <span className="row-actions" role="gridcell">
+                      <a
+                        href={new URL(test.link, window.location.origin).toString()}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Open ${test.subject}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <ExternalLink size={16} aria-hidden="true" />
+                      </a>
+                      <button
+                        className="danger icon-button"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          deleteTest(test.id);
+                        }}
+                        disabled={loading}
+                        aria-label={`Delete ${test.subject}`}
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                      </button>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -201,6 +201,7 @@ code {
 }
 
 input,
+select,
 textarea {
   border: 1px solid #cfd8df;
   border-radius: 6px;
@@ -217,6 +218,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: #176456;
   outline: 3px solid #d5ebe4;
@@ -494,15 +496,25 @@ dd {
   margin-bottom: 1rem;
 }
 
-.request-row {
-  align-items: end;
+.request-form-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.request-field input {
+.request-form-grid input,
+.request-form-grid select {
   min-height: 2.75rem;
+}
+
+.topic-field {
+  grid-column: span 5;
+}
+
+.request-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
 }
 
 .stage-card {
@@ -626,7 +638,13 @@ dd {
   align-items: center;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(220px, 1.35fr) minmax(110px, 0.55fr) minmax(90px, 0.45fr) minmax(92px, 0.35fr);
+  grid-template-columns:
+    minmax(100px, 0.7fr)
+    minmax(130px, 0.85fr)
+    minmax(110px, 0.7fr)
+    minmax(180px, 1.35fr)
+    minmax(90px, 0.55fr)
+    minmax(92px, 0.45fr);
 }
 
 .data-grid-header {
@@ -663,22 +681,11 @@ dd {
   box-shadow: inset 3px 0 0 #176456;
 }
 
-.subject-cell {
-  display: grid;
-  gap: 0.2rem;
+.topic-cell {
   min-width: 0;
-}
-
-.subject-cell strong,
-.subject-cell small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.subject-cell small {
-  color: #667085;
-  font-size: 0.82rem;
 }
 
 .row-actions {
@@ -821,11 +828,16 @@ dd {
   .creation-grid,
   .summary-grid,
   .subject-row,
+  .request-form-grid,
   .teacher-create-panel,
   .teacher-workspace,
   .test-link-header,
   .test-link-row {
     grid-template-columns: 1fr;
+  }
+
+  .topic-field {
+    grid-column: auto;
   }
 
   .data-grid-header {

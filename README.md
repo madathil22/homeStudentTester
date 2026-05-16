@@ -21,7 +21,12 @@ locally in H2, and gives students a stable link such as `/test1`.
 
 1. Teacher opens `/commandcenter`.
 2. Teacher unlocks the command center with `ADMIN_PASSWORD`.
-3. Teacher enters a full request, for example `3 questions for 3rd grade math`.
+3. Teacher fills in structured test details:
+   - state, defaulting to `NJ`
+   - grade level
+   - subject
+   - either question count or time-bound length
+   - free-text topic, such as `3 digit addition`
 4. Backend asks OpenAI for strict JSON matching the question-bank shape.
 5. Backend validates constraints such as exact requested question count.
 6. Backend renders the JSON into a fixed HTML template with:
@@ -29,6 +34,7 @@ locally in H2, and gives students a stable link such as `/test1`.
    - elapsed-time ticker
    - answer inputs
    - submit button
+   - MathJax support for TeX-formatted math expressions
 7. Student opens the generated link and submits answers.
 8. Backend sends the stored question bank, submitted answers, and timing to
    OpenAI for scoring.
@@ -85,9 +91,10 @@ Open the Vite URL, typically `http://localhost:5173`, then navigate to
 The command center is the teacher workspace.
 
 - Unlocks with `ADMIN_PASSWORD`.
-- Creates generated tests from natural-language requests.
+- Creates generated tests from required structured inputs.
 - Shows generation progress.
-- Lists generated tests in a selectable grid.
+- Lists generated tests in a selectable grid split by grade level, subject,
+  type, topic, score, and actions.
 - Opens or deletes generated test links.
 - Shows a right-side results panel for the selected test.
 
@@ -110,6 +117,7 @@ The generated page includes:
 - questions rendered from JSON
 - elapsed-time ticker
 - submit button
+- rendered math notation for TeX expressions such as `\(f(x)=ax^2+bx+c\)`
 
 On submit, the page sends answers and elapsed time to the backend. The backend
 scores the submission through OpenAI and stores the latest result for the
@@ -166,6 +174,11 @@ Supported generated question types:
 The backend also normalizes text-style aliases such as `short_answer`,
 `short_response`, `essay`, and `text` to `free_text`.
 
+For math-heavy tests, generation now asks OpenAI to return TeX-formatted math
+inside strings, using `\( ... \)` for inline math and `\[ ... \]` for display
+math. The stored HTML template loads MathJax so those expressions render like
+textbook notation on the student sheet.
+
 ## 📁 Project Layout
 
 ```txt
@@ -183,6 +196,7 @@ Important files:
 - `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` - OpenAI generation/scoring and HTML rendering
 - `backend/src/main/java/com/homestudenttester/service/AppStateService.java` - H2-backed generated-test state
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` - admin password enforcement
+- `backend/src/main/java/com/homestudenttester/controller/ApiExceptionHandler.java` - API error mapping and backend error logging
 
 ## 🗃️ Legacy Markdown Format
 
@@ -234,3 +248,17 @@ gradle test
 
 There is no Gradle wrapper checked in yet, so backend commands depend on system
 `gradle`.
+
+## 🔍 Backend Diagnostics
+
+The generated-test path now logs the major backend stages so failures are easier
+to diagnose from the server console:
+
+- request receipt
+- OpenAI generation/scoring start
+- response status and duration
+- parse and validation stages
+- generated-test/result persistence
+- exception paths, including non-200 OpenAI responses and I/O failures
+
+The logs intentionally avoid printing secrets such as `OPENAI_API_KEY`.

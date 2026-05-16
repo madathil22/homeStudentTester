@@ -26,9 +26,12 @@ import java.util.OptionalInt;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class OpenAiService {
+    private static final Logger log = LoggerFactory.getLogger(OpenAiService.class);
     private static final Pattern QUESTION_COUNT_PATTERN = Pattern.compile(
             "(?i)\\b(\\d{1,2})\\s+(?:question|questions|problem|problems|item|items)\\b");
 
@@ -39,6 +42,18 @@ public class OpenAiService {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <title>%s Test</title>
+              <script>
+                window.MathJax = {
+                  tex: {
+                    inlineMath: [['\\\\(', '\\\\)']],
+                    displayMath: [['\\\\[', '\\\\]']]
+                  },
+                  chtml: {
+                    scale: 1.05
+                  }
+                };
+              </script>
+              <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
               <style>
                 :root {
                   color-scheme: light;
@@ -189,6 +204,16 @@ public class OpenAiService {
 
                 .question-prompt {
                   margin: 8px 0 14px;
+                }
+
+                mjx-container {
+                  color: #172033;
+                }
+
+                mjx-container[display="true"] {
+                  margin: 16px 0;
+                  overflow-x: auto;
+                  overflow-y: hidden;
                 }
 
                 .option {
@@ -368,6 +393,11 @@ public class OpenAiService {
 
         String testRequest = subject.trim();
         OptionalInt requestedQuestionCount = requestedQuestionCount(testRequest);
+        log.info(
+                "Starting OpenAI test generation: model={}, requestedQuestionCount={}, request={}",
+                properties.openAiModel(),
+                requestedQuestionCount.isPresent() ? requestedQuestionCount.getAsInt() : "unspecified",
+                testRequest);
         String prompt = buildUserPrompt(testRequest, requestedQuestionCount);
         Map<String, Object> body = Map.of(
                 "model", properties.openAiModel(),
@@ -380,6 +410,7 @@ public class OpenAiService {
 
         try {
             String requestBody = objectMapper.writeValueAsString(body);
+            long startedAt = System.nanoTime();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(properties.openAiApiUrl()))
                     .header("Authorization", "Bearer " + apiKey)
@@ -389,22 +420,33 @@ public class OpenAiService {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            long durationMs = Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
+            log.info("OpenAI generation response received: status={}, durationMs={}", response.statusCode(), durationMs);
             if (response.statusCode() != 200) {
+                log.error("OpenAI generation returned non-200 response: status={}, body={}", response.statusCode(), response.body());
                 throw new IllegalStateException("OpenAI API error: " + response.statusCode() + " " + response.body());
             }
 
             JsonNode json = objectMapper.readTree(response.body());
             String questionBankJson = extractContent(json).trim();
             if (questionBankJson.isBlank()) {
+                log.error("OpenAI generation returned an empty question-bank payload.");
                 throw new IllegalStateException("OpenAI API returned an empty question bank payload.");
             }
+            log.info("Parsing OpenAI question-bank payload.");
             QuestionBank questionBank = parseQuestionBank(questionBankJson);
+            log.info("Validating generated question bank: title={}, questionCount={}", questionBank.title(), questionBank.questions().size());
             validateQuestionBank(questionBank, requestedQuestionCount);
+            log.info("OpenAI test generation completed successfully: questionCount={}", questionBank.questions().size());
             return new GeneratedTestDocument(
                     applyTestTemplate(questionBank.title(), renderQuestionBank(questionBank)),
                     questionBank);
-        } catch (IOException | InterruptedException error) {
+        } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
+            log.error("OpenAI generation call was interrupted.", error);
+            throw new IllegalStateException("Unable to call OpenAI API.", error);
+        } catch (IOException error) {
+            log.error("OpenAI generation call failed before a valid response was processed.", error);
             throw new IllegalStateException("Unable to call OpenAI API.", error);
         }
     }
@@ -438,7 +480,13 @@ public class OpenAiService {
                         Map.of("role", "user", "content", writeJson(scoringPayload))));
 
         try {
+            log.info(
+                    "Starting OpenAI scoring: model={}, questionCount={}, answerCount={}",
+                    properties.openAiModel(),
+                    questionBank.questions().size(),
+                    submission.answers().size());
             String requestBody = objectMapper.writeValueAsString(body);
+            long startedAt = System.nanoTime();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(properties.openAiApiUrl()))
                     .header("Authorization", "Bearer " + apiKey)
@@ -448,15 +496,23 @@ public class OpenAiService {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            long durationMs = Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
+            log.info("OpenAI scoring response received: status={}, durationMs={}", response.statusCode(), durationMs);
             if (response.statusCode() != 200) {
+                log.error("OpenAI scoring returned non-200 response: status={}, body={}", response.statusCode(), response.body());
                 throw new IllegalStateException("OpenAI API error: " + response.statusCode() + " " + response.body());
             }
 
             JsonNode json = objectMapper.readTree(response.body());
             GeneratedTestResult aiResult = parseScoreResult(extractContent(json));
+            log.info("OpenAI scoring completed successfully: earned={}, possible={}", aiResult.earned(), aiResult.possible());
             return normalizeScoreResult(questionBank, submission, aiResult);
-        } catch (IOException | InterruptedException error) {
+        } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
+            log.error("OpenAI scoring call was interrupted.", error);
+            throw new IllegalStateException("Unable to score generated test with OpenAI API.", error);
+        } catch (IOException error) {
+            log.error("OpenAI scoring call failed before a valid response was processed.", error);
             throw new IllegalStateException("Unable to score generated test with OpenAI API.", error);
         }
     }
@@ -468,6 +524,8 @@ public class OpenAiService {
                 + "Avoid trivial or nonsensical question formats such as arithmetic fill-in-the-blank items like 'What do you get by adding 200 to (blank)'. "
                 + "Use realistic subject knowledge, clear instructions, and a professional test layout. "
                 + "Treat the teacher request as authoritative for subject, grade level, topic scope, and exact question count. "
+                + "For mathematical expressions in titles, instructions, passages, prompts, and options, use TeX notation wrapped in \\\\( ... \\\\) for inline math and \\\\[ ... \\\\] for display math. "
+                + "Prefer properly typeset expressions such as \\\\(f(x)=ax^2+bx+c\\\\) over plain-text ASCII math when math notation is needed. "
                 + "Return strict JSON only, with no markdown fences or surrounding commentary. "
                 + "Use this exact shape: "
                 + "{"

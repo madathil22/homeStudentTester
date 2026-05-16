@@ -11,13 +11,15 @@ The active user-facing flow is:
 
 1. A teacher opens the command center.
 2. The teacher unlocks `/commandcenter` with `ADMIN_PASSWORD`.
-3. The teacher enters a full test request, such as `3 questions for 3rd grade math`.
+3. The teacher fills a required form with state, grade level, subject, either
+   question count or time-bound length, and a free-text topic such as
+   `3 digit addition`.
 4. The React frontend calls `POST /api/test/generate` with `x-admin-token`.
 5. The Spring backend calls OpenAI and asks for strict JSON matching the
    generated question-bank DTO shape.
 6. The backend validates key constraints such as exact requested question count.
 7. The backend renders that JSON into a fixed HTML test template with student
-   name, elapsed-time ticker, and submit button.
+   name, elapsed-time ticker, submit button, and MathJax support for TeX math.
 8. The backend stores the generated HTML plus question-bank metadata in H2.
 9. The UI lists generated tests with stable links such as `/test1`.
 10. A student opens the link and the frontend embeds `/api/test/html/{testId}`.
@@ -38,25 +40,27 @@ the product direction is clarified.
 - `frontend/` - React 18 + Vite frontend.
 - `.vscode/tasks.json` - convenience tasks for backend/frontend startup.
 - `.devcontainer/devcontainer.json` - Java 21, Gradle, and Node 24 dev setup.
-- `PROJECT_PLAN.md` - historical migration plan; useful context, but partly
-  stale compared with the generated-HTML flow in the current README and UI.
 
 Important current files:
 
 - `frontend/src/App.jsx` - `/commandcenter` teacher UI, password unlock flow,
-  generated-test grid/results panel, and student iframe routing.
+  structured generation form, split generated-test grid/results panel, and
+  student iframe routing.
 - `frontend/src/api.js` - tiny fetch wrapper used by the React app.
 - `frontend/src/styles.css` - app styling.
 - `backend/src/main/java/com/homestudenttester/controller/TestApiController.java`
   - API routes for generated tests plus legacy markdown/submission endpoints.
 - `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` -
   OpenAI JSON question-bank generation, backend HTML rendering, generated-test
-  answer scoring, and scoring-response normalization.
+  answer scoring, MathJax-enabled test rendering, and scoring-response
+  normalization.
 - `backend/src/main/java/com/homestudenttester/service/AppStateService.java` -
   H2-backed app state, generated HTML/question-bank/result metadata storage,
   legacy submissions/scoring.
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` -
   `ADMIN_PASSWORD` enforcement for command-center/admin APIs.
+- `backend/src/main/java/com/homestudenttester/controller/ApiExceptionHandler.java`
+  - user-facing API error mapping plus backend exception logging.
 
 ## Current API Surface
 
@@ -144,13 +148,30 @@ gradle test
 There is no Gradle wrapper checked in yet, so backend commands currently depend
 on system `gradle`.
 
+## Current Product Notes
+
+- The teacher UI now collects structured generation inputs and composes the
+  backend `subject` request string from them. The backend contract is still a
+  single `subject` field for now.
+- The generated-tests grid displays parsed grade level, subject, type, topic,
+  score, and actions. Older free-form rows fall back gracefully when those
+  fields cannot be inferred.
+- Generated test HTML loads MathJax, and generation prompts ask for TeX-wrapped
+  math expressions using `\( ... \)` and `\[ ... \]`.
+- Backend logs now cover generation/scoring request receipt, OpenAI call timing,
+  parse/validation progress, persistence, and exception paths.
+
 ## Known Gaps
 
-- `PROJECT_PLAN.md` still describes the earlier Node-to-Spring markdown app
-  migration and should not be treated as the latest product spec.
 - Generated tests are stored as raw HTML plus JSON metadata. Be careful with any
   changes that alter rendering, sanitization, origin boundaries, answer capture,
   or the shape of stored question-bank/result metadata.
+- Existing stored tests preserve the HTML they were generated with; template
+  improvements such as MathJax apply to newly generated tests unless older tests
+  are regenerated.
+- Time-bound generation is captured in the UI request text but is not yet
+  enforced or validated as a first-class backend field the way exact question
+  count is.
 - The command center stores the entered admin password in browser
   `sessionStorage` and sends it as `x-admin-token`; there is not yet a real
   session/token system.

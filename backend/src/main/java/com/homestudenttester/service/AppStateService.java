@@ -26,9 +26,12 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AppStateService {
+  private static final Logger log = LoggerFactory.getLogger(AppStateService.class);
   private static final String ACTIVE_TEST_ID = "active-test";
   private static final String ANSWER_BANK_ID = "answer-bank";
   private static final String GENERATED_TEST_PREFIX = "test";
@@ -97,6 +100,7 @@ public class AppStateService {
   @Transactional
   public GeneratedTestInfo saveGeneratedTest(String subject, GeneratedTestDocument generatedTest) {
     String id = nextGeneratedTestId();
+    log.info("Persisting generated test: testId={}, questionCount={}", id, generatedTest.questionBank().questions().size());
     GeneratedTestMetadata metadata = new GeneratedTestMetadata(
         subject,
         generatedTest.questionBank(),
@@ -108,6 +112,7 @@ public class AppStateService {
         writeJson(metadata),
         Instant.now());
     documentRepository.save(document);
+    log.info("Generated test persisted: testId={}", id);
     return toGeneratedTestInfo(document);
   }
 
@@ -129,6 +134,7 @@ public class AppStateService {
       String id,
       GeneratedTestSubmission submission,
       GeneratedTestResult result) {
+    log.info("Persisting generated-test result: testId={}, earned={}, possible={}", id, result.earned(), result.possible());
     StoredDocument existing = documentRepository.findById(id)
         .filter(document -> document.getId().startsWith(GENERATED_TEST_PREFIX))
         .orElseThrow(() -> new IllegalArgumentException("Generated test not found."));
@@ -143,7 +149,9 @@ public class AppStateService {
         existing.getRawMarkdown(),
         writeJson(updatedMetadata),
         existing.getCreatedAt());
-    return toGeneratedTestInfo(documentRepository.save(updated));
+    GeneratedTestInfo saved = toGeneratedTestInfo(documentRepository.save(updated));
+    log.info("Generated-test result persisted: testId={}", id);
+    return saved;
   }
 
   public List<GeneratedTestInfo> generatedTests() {

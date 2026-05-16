@@ -16,6 +16,8 @@ import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TestApiController {
+  private static final Logger log = LoggerFactory.getLogger(TestApiController.class);
+
   private final AppStateService appStateService;
   private final AuthService authService;
   private final OpenAiService openAiService;
@@ -67,8 +71,10 @@ public class TestApiController {
       @RequestBody(required = false) GenerateTestRequest request) {
     authService.requireAdmin(adminToken);
     String subject = request == null || request.subject() == null ? "" : request.subject();
+    log.info("Received generated-test request: {}", subject);
     var generatedDocument = openAiService.generateTest(subject);
     var generatedTest = appStateService.saveGeneratedTest(subject, generatedDocument);
+    log.info("Generated test published: testId={}, link={}", generatedTest.id(), generatedTest.link());
     return Map.of(
         "testLink", generatedTest.link(),
         "testId", generatedTest.id(),
@@ -103,6 +109,7 @@ public class TestApiController {
   public Map<String, Object> submitGeneratedTest(
       @PathVariable String testId,
       @RequestBody(required = false) GeneratedTestSubmissionRequest request) {
+    log.info("Received generated-test submission: testId={}", testId);
     var metadata = appStateService.generatedTestMetadata(testId);
     if (metadata.questionBank() == null) {
       throw new IllegalStateException("Generated test does not have question-bank JSON available for scoring.");
@@ -119,8 +126,19 @@ public class TestApiController {
         safeRequest.answers() == null ? Map.of() : safeRequest.answers(),
         Math.max(0, safeRequest.elapsedSeconds()),
         Instant.now());
+    log.info(
+        "Scoring generated-test submission: testId={}, studentNamePresent={}, answerCount={}, elapsedSeconds={}",
+        testId,
+        !studentName.isBlank(),
+        submission.answers().size(),
+        submission.elapsedSeconds());
     var result = openAiService.scoreGeneratedTest(metadata.questionBank(), submission);
     var generatedTest = appStateService.saveGeneratedTestResult(testId, submission, result);
+    log.info(
+        "Generated-test submission scored: testId={}, earned={}, possible={}",
+        testId,
+        result.earned(),
+        result.possible());
     return Map.of(
         "test", generatedTest,
         "result", result);
