@@ -29,6 +29,10 @@ function formatScore(result) {
   return `${result.earned}/${result.possible}`;
 }
 
+function formatTokenCount(value) {
+  return Number(value || 0).toLocaleString();
+}
+
 function parseGeneratedTestRequest(request = '') {
   const questionMatch = request.match(
     /^(\d+)\s+questions for (.+?) (math|english reading|english writing) aligned to ([A-Z]{2}) standards\. Topic: (.+)\.$/i
@@ -546,6 +550,16 @@ function ResultsPanel({ selectedTest, totalSubmitted }) {
         </a>
       </div>
 
+      <section className="token-usage-panel">
+        <div className="section-title">
+          <h3>Token Usage</h3>
+        </div>
+        <div className="token-usage-grid">
+          <TokenUsageSummary label="Generation" usage={selectedTest.generationUsage} />
+          <TokenUsageSummary label="Scoring" usage={result?.tokenUsage} />
+        </div>
+      </section>
+
       {result ? (
         <>
           <div className="result-metrics">
@@ -598,6 +612,40 @@ function ResultsPanel({ selectedTest, totalSubmitted }) {
         </div>
       )}
     </aside>
+  );
+}
+
+function TokenUsageSummary({ label, usage }) {
+  return (
+    <article className="token-usage-card">
+      <strong>{label}</strong>
+      {usage ? (
+        <dl>
+          <div>
+            <dt>Total</dt>
+            <dd>{formatTokenCount(usage.totalTokens)}</dd>
+          </div>
+          <div>
+            <dt>Input</dt>
+            <dd>{formatTokenCount(usage.inputTokens)}</dd>
+          </div>
+          <div>
+            <dt>Cached</dt>
+            <dd>{formatTokenCount(usage.cachedInputTokens)}</dd>
+          </div>
+          <div>
+            <dt>Output</dt>
+            <dd>{formatTokenCount(usage.outputTokens)}</dd>
+          </div>
+          <div>
+            <dt>Reasoning</dt>
+            <dd>{formatTokenCount(usage.reasoningTokens)}</dd>
+          </div>
+        </dl>
+      ) : (
+        <p>Not available</p>
+      )}
+    </article>
   );
 }
 

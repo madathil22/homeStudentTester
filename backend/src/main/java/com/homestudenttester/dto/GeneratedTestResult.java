@@ -10,5 +10,6 @@ public record GeneratedTestResult(
     double earned,
     double possible,
     List<GeneratedWrongAnswer> wrongAnswers,
-    Instant scoredAt) {
+    Instant scoredAt,
+    TokenUsage tokenUsage) {
 }

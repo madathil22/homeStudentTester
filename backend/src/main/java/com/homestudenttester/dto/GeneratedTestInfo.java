@@ -5,5 +5,6 @@ public record GeneratedTestInfo(
         String subject,
         String link,
         String createdAt,
-        GeneratedTestResult result) {
+        GeneratedTestResult result,
+        TokenUsage generationUsage) {
 }

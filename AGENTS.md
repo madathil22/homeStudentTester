@@ -21,7 +21,7 @@ The active user-facing flow is:
 7. The backend renders that JSON into a fixed HTML test template with student
    name, elapsed-time ticker, submit button, and MathJax support for TeX math.
 8. The backend stores the generated HTML plus question-bank metadata in H2.
-9. The UI lists generated tests with stable links such as `/test1`.
+9. The UI lists generated tests with stable links such as `/test-amber-fox`.
 10. A student opens the link and the frontend embeds `/api/test/html/{testId}`.
 11. The generated HTML captures student answers and elapsed time, then posts to
     `POST /api/test/{testId}/submit`.
@@ -143,10 +143,15 @@ on system `gradle`.
 - The generated-tests grid displays parsed grade level, subject, type, topic,
   score, and actions. Older free-form rows fall back gracefully when those
   fields cannot be inferred.
+- New generated-test links use configurable color-animal slugs from
+  `app.test-link-colors` and `app.test-link-animals` in `application.yml`.
 - Generated test HTML loads MathJax, and generation prompts ask for TeX-wrapped
   math expressions using `\( ... \)` and `\[ ... \]`.
+- Generated questions now include answer metadata; backend validation rejects
+  invalid objective-question answer shapes before publishing.
 - Backend logs now cover generation/scoring request receipt, OpenAI call timing,
-  parse/validation progress, persistence, and exception paths.
+  parse/validation progress, persistence, token usage, and exception paths.
+- The command center shows per-test token usage for generation and scoring separately.
 
 ## Known Gaps
 

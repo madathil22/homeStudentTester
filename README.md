@@ -4,14 +4,14 @@
 
 `homeStudentTester` turns a teacher request into a structured JSON question bank
 with OpenAI, renders that data into a consistent HTML test page, stores the test
-locally in H2, and gives students a stable link such as `/test1`.
+locally in H2, and gives students a stable link such as `/test-amber-fox`.
 
 ## 🔎 Overview
 
 | Area       | Details                                           |
 | ---------- | ------------------------------------------------- |
 | Teacher UI | `/commandcenter`, locked with `ADMIN_PASSWORD`    |
-| Student UI | Stable generated links such as `/test1`, `/test2` |
+| Student UI | Stable generated links such as `/test-amber-fox`, `/test-blue-fox` |
 | Backend    | Spring Boot 3.3.5, Java 21, H2                    |
 | Frontend   | React 18, Vite, lucide-react                      |
 | AI flow    | OpenAI JSON question generation and scoring       |
@@ -65,6 +65,9 @@ OPENAI_STORE=false
 
 Keep `.env` private. It is ignored by Git.
 
+Readable generated-test links are built from the `app.test-link-colors` and
+`app.test-link-animals` arrays in `backend/src/main/resources/application.yml`.
+
 ### 🧩 2. Start The Backend
 
 From `/workspaces/homestudenttester/backend`:
@@ -106,11 +109,12 @@ Result details include:
 - total time taken
 - average time per question
 - final score
+- generation and scoring token usage per test record
 - wrong-answer feedback
 
 ## 📝 Student Experience
 
-Students open links like `/test1`.
+Students open links like `/test-amber-fox`.
 
 The generated page includes:
 
@@ -157,7 +161,9 @@ OpenAI returns JSON shaped around the existing DTOs:
       "points": 1,
       "prompt": "string",
       "options": [{ "label": "A", "text": "string" }],
-      "passageIds": []
+      "passageIds": [],
+      "correctOptionLabels": ["A"],
+      "expectedAnswer": ""
     }
   ]
 }
@@ -171,6 +177,11 @@ Supported generated question types:
 
 The backend also normalizes text-style aliases such as `short_answer`,
 `short_response`, `essay`, and `text` to `free_text`.
+
+Generated questions include answer metadata so the backend can reject invalid
+question shapes before publishing: `multiple_choice` must have exactly one
+correct option, `multi_select` must have more than one correct option, and
+`free_text` must provide an `expectedAnswer`.
 
 For math-heavy tests, generation now asks OpenAI to return TeX-formatted math
 inside strings, using `\( ... \)` for inline math and `\[ ... \]` for display

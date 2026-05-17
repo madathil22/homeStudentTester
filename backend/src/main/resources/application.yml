@@ -10,6 +10,20 @@ app:
   openai-reasoning-effort: ${OPENAI_REASONING_EFFORT:low}
   openai-store: ${OPENAI_STORE:false}
   admin-password: ${ADMIN_PASSWORD:}
+  test-link-colors:
+    - amber
+    - blue
+    - coral
+    - green
+    - indigo
+    - silver
+  test-link-animals:
+    - fox
+    - otter
+    - panda
+    - robin
+    - tiger
+    - whale
 
 spring:
   datasource:

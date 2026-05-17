@@ -11,6 +11,7 @@ import com.homestudenttester.dto.OptionDto;
 import com.homestudenttester.dto.PassageDto;
 import com.homestudenttester.dto.QuestionBank;
 import com.homestudenttester.dto.QuestionDto;
+import com.homestudenttester.dto.TokenUsage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -19,10 +20,12 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
@@ -442,9 +445,12 @@ public class OpenAiService {
           questionBank.questions().size());
       validateQuestionBank(questionBank, requestedQuestionCount);
       log.info("OpenAI test generation completed successfully: questionCount={}", questionBank.questions().size());
+      TokenUsage usage = parseTokenUsage(json);
+      logTokenUsage("generation", usage);
       return new GeneratedTestDocument(
           applyTestTemplate(questionBank.title(), renderQuestionBank(questionBank)),
-          questionBank);
+          questionBank,
+          usage);
     } catch (InterruptedException error) {
       Thread.currentThread().interrupt();
       log.error("OpenAI generation call was interrupted.", error);
@@ -468,12 +474,12 @@ public class OpenAiService {
       throw new IllegalArgumentException("Submitted answers are required for scoring.");
     }
 
-    Map<String, Object> scoringPayload = Map.of(
-        "questionBank", questionBank,
-        "submission", submission,
-        "answersByQuestionNumber", answersByQuestionNumber(questionBank, submission.answers()),
-        "answerKeyRequirement",
-        "Infer the expected answer from the question content. Award partial credit only when the answer demonstrates the requested knowledge.");
+    Map<String, Object> scoringPayload = new LinkedHashMap<>();
+    scoringPayload.put("questionBank", questionBank);
+    scoringPayload.put("answersByQuestionNumber", answersByQuestionNumber(questionBank, submission.answers()));
+    scoringPayload.put(
+        "gradingInstruction",
+        "Use the stored answer metadata in each question as the answer key. Award partial credit only when free-text answers demonstrate the requested knowledge.");
     String scoringSystemPrompt = buildScoringSystemPrompt();
     String scoringInput = scoringSystemPrompt + "\n\n" + writeJson(scoringPayload);
     Map<String, Object> scoringFormat = buildScoringJsonSchemaFormat();
@@ -513,8 +519,10 @@ public class OpenAiService {
 
       JsonNode json = objectMapper.readTree(response.body());
       GeneratedTestResult aiResult = parseScoreResult(extractContent(json));
+      TokenUsage usage = parseTokenUsage(json);
+      logTokenUsage("scoring", usage);
       log.info("OpenAI scoring completed successfully: earned={}, possible={}", aiResult.earned(), aiResult.possible());
-      return normalizeScoreResult(questionBank, submission, aiResult);
+      return normalizeScoreResult(questionBank, submission, aiResult, usage);
     } catch (InterruptedException error) {
       Thread.currentThread().interrupt();
       log.error("OpenAI scoring call was interrupted.", error);
@@ -540,9 +548,9 @@ public class OpenAiService {
         + "\"title\":\"string\","
         + "\"instructions\":\"string\","
         + "\"passages\":[{\"id\":\"p1\",\"title\":\"string\",\"body\":\"string\"}],"
-        + "\"questions\":[{\"number\":\"1\",\"type\":\"multiple_choice|multi_select|free_text\",\"points\":1,\"prompt\":\"string\",\"options\":[{\"label\":\"A\",\"text\":\"string\"}],\"passageIds\":[\"p1\"]}]"
+        + "\"questions\":[{\"number\":\"1\",\"type\":\"multiple_choice|multi_select|free_text\",\"points\":1,\"prompt\":\"string\",\"options\":[{\"label\":\"A\",\"text\":\"string\"}],\"passageIds\":[\"p1\"],\"correctOptionLabels\":[\"A\"],\"expectedAnswer\":\"string\"}]"
         + "}. "
-        + "Only multiple_choice and multi_select questions may include options; free_text questions should use an empty options array. "
+        + "For multiple_choice, provide exactly one correctOptionLabels entry and an empty expectedAnswer. For multi_select, provide every correct option label and an empty expectedAnswer. For free_text, use an empty options array, an empty correctOptionLabels array, and a concise expectedAnswer. "
         + "Include directions and a mix of question types appropriate for the subject.";
   }
 
@@ -556,16 +564,16 @@ public class OpenAiService {
         + countInstruction
         + "Use multiple_choice, multi_select, and free_text questions as appropriate to the subject. "
         + "Assign a score value in the points field for every question. "
-        + "Use options only for multiple_choice or multi_select questions. "
+        + "Use options only for multiple_choice or multi_select questions. Make sure every multiple_choice question has exactly one correct answer, every multi_select question has more than one correct answer, and no option set contains duplicate answer text. "
         + "Return only JSON that matches the requested schema. "
         + "Return only the final JSON. Do not explain your reasoning. Keep calculations concise.";
   }
 
   private String buildScoringSystemPrompt() {
     return "You are a strict but fair teacher scoring a student test submission. "
-        + "You will receive one JSON object containing questionBank and submission. "
+        + "You will receive one JSON object containing questionBank and answersByQuestionNumber. "
         + "Use answersByQuestionNumber as the authoritative student answer map. "
-        + "Question answer keys may be implicit in the question/options, so infer the best expected answer from the educational content. "
+        + "Use each question's correctOptionLabels or expectedAnswer as the authoritative answer key. "
         + "Return strict JSON only, with no markdown fences or commentary. "
         + "Use this exact response shape: "
         + "{"
@@ -723,6 +731,7 @@ public class OpenAiService {
           numberValue(firstPresent(score, "possible", "totalPossible", "maxScore", "totalPoints")),
           parseWrongAnswers(firstPresent(score, "wrongAnswers", "wrong_answers", "incorrectQuestions",
               "incorrect_questions", "missedQuestions", "missed_questions")),
+          null,
           null);
     } catch (IOException error) {
       throw new IllegalStateException("OpenAI API returned invalid scoring JSON.", error);
@@ -786,7 +795,8 @@ public class OpenAiService {
   private GeneratedTestResult normalizeScoreResult(
       QuestionBank questionBank,
       GeneratedTestSubmission submission,
-      GeneratedTestResult aiResult) {
+      GeneratedTestResult aiResult,
+      TokenUsage usage) {
     double possible = questionBank.questions().stream().mapToDouble(QuestionDto::points).sum();
     double earned = Math.max(0, Math.min(possible, aiResult.earned()));
     int questionCount = questionBank.questions().size();
@@ -799,7 +809,29 @@ public class OpenAiService {
         earned,
         possible,
         aiResult.wrongAnswers() == null ? List.of() : aiResult.wrongAnswers(),
-        Instant.now());
+        Instant.now(),
+        usage);
+  }
+
+  private TokenUsage parseTokenUsage(JsonNode root) {
+    JsonNode usage = root.path("usage");
+    return new TokenUsage(
+        usage.path("input_tokens").asLong(0),
+        usage.path("input_tokens_details").path("cached_tokens").asLong(0),
+        usage.path("output_tokens").asLong(0),
+        usage.path("output_tokens_details").path("reasoning_tokens").asLong(0),
+        usage.path("total_tokens").asLong(0));
+  }
+
+  private void logTokenUsage(String phase, TokenUsage usage) {
+    log.info(
+        "OpenAI {} token usage: input={}, cachedInput={}, output={}, reasoning={}, total={}",
+        phase,
+        usage.inputTokens(),
+        usage.cachedInputTokens(),
+        usage.outputTokens(),
+        usage.reasoningTokens(),
+        usage.totalTokens());
   }
 
   private String normalizeJsonContent(String content) {
@@ -841,6 +873,73 @@ public class OpenAiService {
       if (!type.equals("multiple_choice") && !type.equals("multi_select") && !type.equals("free_text")) {
         throw new IllegalStateException("OpenAI API returned unsupported question type: " + question.type());
       }
+      validateAnswerMetadata(question, type);
+    }
+  }
+
+  private void validateAnswerMetadata(QuestionDto question, String type) {
+    List<OptionDto> options = question.options() == null ? List.of() : question.options();
+    List<String> correctLabels = question.correctOptionLabels() == null ? List.of() : question.correctOptionLabels();
+    String expectedAnswer = question.expectedAnswer() == null ? "" : question.expectedAnswer().trim();
+
+    Set<String> optionLabels = new HashSet<>();
+    Set<String> optionTexts = new HashSet<>();
+    for (OptionDto option : options) {
+      if (option == null || isBlank(option.label()) || isBlank(option.text())) {
+        throw new IllegalStateException("OpenAI API returned an option without both label and text.");
+      }
+      String label = option.label().trim();
+      String text = option.text().trim();
+      if (!optionLabels.add(label)) {
+        throw new IllegalStateException("OpenAI API returned duplicate option label: " + label + ".");
+      }
+      if (!optionTexts.add(text)) {
+        throw new IllegalStateException("OpenAI API returned duplicate option text.");
+      }
+    }
+
+    Set<String> uniqueCorrectLabels = new HashSet<>();
+    for (String label : correctLabels) {
+      if (isBlank(label)) {
+        throw new IllegalStateException("OpenAI API returned a blank correct option label.");
+      }
+      String trimmed = label.trim();
+      if (!uniqueCorrectLabels.add(trimmed)) {
+        throw new IllegalStateException("OpenAI API returned duplicate correct option label: " + trimmed + ".");
+      }
+      if (!optionLabels.contains(trimmed)) {
+        throw new IllegalStateException("OpenAI API returned a correct option label that is not present: " + trimmed + ".");
+      }
+    }
+
+    if (type.equals("multiple_choice")) {
+      if (correctLabels.size() != 1) {
+        throw new IllegalStateException("OpenAI API returned a multiple-choice question without exactly one correct option.");
+      }
+      if (!expectedAnswer.isBlank()) {
+        throw new IllegalStateException("OpenAI API returned expectedAnswer for a multiple-choice question.");
+      }
+      return;
+    }
+
+    if (type.equals("multi_select")) {
+      if (correctLabels.size() < 2) {
+        throw new IllegalStateException("OpenAI API returned a multi-select question with fewer than two correct options.");
+      }
+      if (!expectedAnswer.isBlank()) {
+        throw new IllegalStateException("OpenAI API returned expectedAnswer for a multi-select question.");
+      }
+      return;
+    }
+
+    if (!options.isEmpty()) {
+      throw new IllegalStateException("OpenAI API returned options for a free-text question.");
+    }
+    if (!correctLabels.isEmpty()) {
+      throw new IllegalStateException("OpenAI API returned correct option labels for a free-text question.");
+    }
+    if (expectedAnswer.isBlank()) {
+      throw new IllegalStateException("OpenAI API returned a free-text question without expectedAnswer.");
     }
   }
 

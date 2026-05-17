@@ -1,6 +1,7 @@
 package com.homestudenttester.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import java.util.List;
 
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(
@@ -11,5 +12,7 @@ public record AppProperties(
                 int openAiMaxOutputTokens,
                 String openAiReasoningEffort,
                 boolean openAiStore,
-                String adminPassword) {
+                String adminPassword,
+                List<String> testLinkColors,
+                List<String> testLinkAnimals) {
 }

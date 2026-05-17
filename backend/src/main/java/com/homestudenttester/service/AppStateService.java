@@ -8,6 +8,7 @@ import com.homestudenttester.dto.GeneratedTestInfo;
 import com.homestudenttester.dto.GeneratedTestMetadata;
 import com.homestudenttester.dto.GeneratedTestResult;
 import com.homestudenttester.dto.GeneratedTestSubmission;
+import com.homestudenttester.config.AppProperties;
 import com.homestudenttester.model.StoredDocument;
 import com.homestudenttester.repository.StoredDocumentRepository;
 import java.time.Instant;
@@ -26,12 +27,15 @@ public class AppStateService {
 
   private final StoredDocumentRepository documentRepository;
   private final ObjectMapper objectMapper;
+  private final AppProperties properties;
 
   public AppStateService(
       StoredDocumentRepository documentRepository,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      AppProperties properties) {
     this.documentRepository = documentRepository;
     this.objectMapper = objectMapper;
+    this.properties = properties;
   }
 
   @Transactional
@@ -42,7 +46,8 @@ public class AppStateService {
         subject,
         generatedTest.questionBank(),
         null,
-        null);
+        null,
+        generatedTest.generationUsage());
     StoredDocument document = new StoredDocument(
         id,
         generatedTest.html(),
@@ -80,7 +85,8 @@ public class AppStateService {
         existingMetadata.subject(),
         existingMetadata.questionBank(),
         submission,
-        result);
+        result,
+        existingMetadata.generationUsage());
     StoredDocument updated = new StoredDocument(
         existing.getId(),
         existing.getRawMarkdown(),
@@ -110,17 +116,48 @@ public class AppStateService {
   }
 
   private String nextGeneratedTestId() {
-    long number = documentRepository.findByIdStartingWith(GENERATED_TEST_PREFIX).stream()
-        .mapToLong(document -> {
-          try {
-            return Long.parseLong(document.getId().substring(GENERATED_TEST_PREFIX.length()));
-          } catch (NumberFormatException ex) {
-            return 0L;
-          }
-        })
-        .max()
-        .orElse(0L);
-    return GENERATED_TEST_PREFIX + (number + 1);
+    List<String> colors = sanitizedSlugParts(properties.testLinkColors());
+    List<String> animals = sanitizedSlugParts(properties.testLinkAnimals());
+    if (colors.isEmpty() || animals.isEmpty()) {
+      throw new IllegalStateException("Test link colors and animals must be configured.");
+    }
+
+    List<StoredDocument> existingTests = documentRepository.findByIdStartingWith(GENERATED_TEST_PREFIX);
+    long index = existingTests.size();
+    int combinations = colors.size() * animals.size();
+    for (long attempt = 0; attempt < combinations; attempt++) {
+      long slot = index + attempt;
+      String baseId = buildReadableTestId(colors, animals, slot);
+      if (!documentRepository.existsById(baseId)) {
+        return baseId;
+      }
+    }
+
+    String baseId = buildReadableTestId(colors, animals, index);
+    int suffix = 2;
+    while (documentRepository.existsById(baseId + "-" + suffix)) {
+      suffix++;
+    }
+    return baseId + "-" + suffix;
+  }
+
+  private String buildReadableTestId(List<String> colors, List<String> animals, long index) {
+    String color = colors.get((int) (index % colors.size()));
+    String animal = animals.get((int) ((index / colors.size()) % animals.size()));
+    return GENERATED_TEST_PREFIX + "-" + color + "-" + animal;
+  }
+
+  private List<String> sanitizedSlugParts(List<String> values) {
+    if (values == null) {
+      return List.of();
+    }
+    return values.stream()
+        .filter(value -> value != null && !value.isBlank())
+        .map(value -> value.trim().toLowerCase().replaceAll("[^a-z0-9]+", "-"))
+        .map(value -> value.replaceAll("^-+|-+$", ""))
+        .filter(value -> !value.isBlank())
+        .distinct()
+        .toList();
   }
 
   private GeneratedTestInfo toGeneratedTestInfo(StoredDocument document) {
@@ -133,13 +170,15 @@ public class AppStateService {
         subject,
         "/" + document.getId(),
         document.getCreatedAt().toString(),
-        metadata.result());
+        metadata.result(),
+        metadata.generationUsage());
   }
 
   private GeneratedTestMetadata readGeneratedTestMetadata(StoredDocument document) {
     try {
       GeneratedTestMetadata metadata = objectMapper.readValue(document.getParsedJson(), GeneratedTestMetadata.class);
-      if (metadata.subject() != null || metadata.questionBank() != null || metadata.result() != null) {
+      if (metadata.subject() != null || metadata.questionBank() != null || metadata.result() != null
+          || metadata.generationUsage() != null) {
         return metadata;
       }
     } catch (JsonProcessingException ignored) {
@@ -150,6 +189,7 @@ public class AppStateService {
     });
     return new GeneratedTestMetadata(
         legacyMetadata.getOrDefault("subject", "Unknown subject"),
+        null,
         null,
         null,
         null);

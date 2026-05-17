@@ -4,5 +4,6 @@ public record GeneratedTestMetadata(
     String subject,
     QuestionBank questionBank,
     GeneratedTestSubmission submission,
-    GeneratedTestResult result) {
+    GeneratedTestResult result,
+    TokenUsage generationUsage) {
 }

@@ -8,5 +8,7 @@ public record QuestionDto(
     double points,
     String prompt,
     List<OptionDto> options,
-    List<String> passageIds) {
+    List<String> passageIds,
+    List<String> correctOptionLabels,
+    String expectedAnswer) {
 }
