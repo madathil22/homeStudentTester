@@ -1,5 +1,5 @@
 import { CheckCircle2, ClipboardList, Clock3, ExternalLink, FileQuestion, LoaderCircle, LockKeyhole, LogOut, RefreshCcw, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiRequest } from './api.js';
 
 function getRoute() {
@@ -519,9 +519,18 @@ function ScoreBadge({ result }) {
 }
 
 function ResultsPanel({ selectedTest, totalSubmitted }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    const mathJax = window.MathJax;
+    if (!panelRef.current || !mathJax?.typesetPromise) return;
+    mathJax.typesetClear?.([panelRef.current]);
+    mathJax.typesetPromise([panelRef.current]);
+  }, [selectedTest]);
+
   if (!selectedTest) {
     return (
-      <aside className="panel results-detail-panel">
+      <aside className="panel results-detail-panel" ref={panelRef}>
         <div className="empty-state compact-empty">
           <ClipboardList size={22} aria-hidden="true" />
           <p>Select a test to inspect results.</p>
@@ -533,7 +542,7 @@ function ResultsPanel({ selectedTest, totalSubmitted }) {
   const result = selectedTest.result;
 
   return (
-    <aside className="panel results-detail-panel">
+    <aside className="panel results-detail-panel" ref={panelRef}>
       <div className="panel-heading">
         <div>
           <p className="eyebrow">Results</p>

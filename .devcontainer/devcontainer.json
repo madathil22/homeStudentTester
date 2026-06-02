@@ -14,15 +14,19 @@
   },
 
   "runArgs": [
-    "--cpus=2",
-    "--memory=4g",
-    "-p",
-    "0.0.0.0:3000:3000",
-    "-p",
-    "0.0.0.0:5173:5173",
-    "-p",
-    "0.0.0.0:8080:8080"
-  ],
+  "--cpus=2",
+  "--memory=4g",
+  "--security-opt",
+  "seccomp=unconfined",
+  "--cap-add",
+  "SYS_ADMIN",
+  "-p",
+  "0.0.0.0:3000:3000",
+  "-p",
+  "0.0.0.0:5173:5173",
+  "-p",
+  "0.0.0.0:8080:8080"
+],
 
   "mounts": [
     "source=npm-cache,target=/home/vscode/.npm,type=volume"
