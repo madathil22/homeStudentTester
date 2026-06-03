@@ -1,20 +1,33 @@
 package com.homestudenttester.service;
 
+import static com.homestudenttester.utils.ServiceUtils.fingerprint;
+import static com.homestudenttester.utils.ServiceUtils.normalizeQuestionType;
+import static com.homestudenttester.utils.ServiceUtils.questionFingerprint;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.homestudenttester.dto.AnswerKeyCorrectionInfo;
+import com.homestudenttester.dto.AnswerKeyVerification;
 import com.homestudenttester.dto.GeneratedTestDocument;
 import com.homestudenttester.dto.GeneratedTestInfo;
 import com.homestudenttester.dto.GeneratedTestMetadata;
 import com.homestudenttester.dto.GeneratedTestResult;
 import com.homestudenttester.dto.GeneratedTestSubmission;
 import com.homestudenttester.config.AppProperties;
+import com.homestudenttester.dto.QuestionBank;
+import com.homestudenttester.dto.QuestionDto;
+import com.homestudenttester.model.AnswerKeyCorrection;
 import com.homestudenttester.model.StoredDocument;
+import com.homestudenttester.repository.AnswerKeyCorrectionRepository;
 import com.homestudenttester.repository.StoredDocumentRepository;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -26,14 +39,17 @@ public class AppStateService {
   private static final String GENERATED_TEST_PREFIX = "test";
 
   private final StoredDocumentRepository documentRepository;
+  private final AnswerKeyCorrectionRepository correctionRepository;
   private final ObjectMapper objectMapper;
   private final AppProperties properties;
 
   public AppStateService(
       StoredDocumentRepository documentRepository,
+      AnswerKeyCorrectionRepository correctionRepository,
       ObjectMapper objectMapper,
       AppProperties properties) {
     this.documentRepository = documentRepository;
+    this.correctionRepository = correctionRepository;
     this.objectMapper = objectMapper;
     this.properties = properties;
   }
@@ -69,6 +85,57 @@ public class AppStateService {
         .filter(document -> document.getId().startsWith(GENERATED_TEST_PREFIX))
         .map(this::readGeneratedTestMetadata)
         .orElseThrow(() -> new IllegalArgumentException("Generated test not found."));
+  }
+
+  public List<AnswerKeyCorrection> approvedCorrectionsFor(QuestionBank questionBank) {
+    if (questionBank == null || questionBank.questions() == null) {
+      return List.of();
+    }
+    Set<String> fingerprints = new LinkedHashSet<>();
+    for (QuestionDto question : questionBank.questions()) {
+      fingerprints.add(questionFingerprint(question));
+    }
+    List<AnswerKeyCorrection> corrections = new ArrayList<>();
+    for (String fingerprint : fingerprints) {
+      correctionRepository.findByApprovedTrueAndQuestionFingerprintOrderByCreatedAtDesc(fingerprint).stream()
+          .findFirst()
+          .ifPresent(corrections::add);
+    }
+    return corrections;
+  }
+
+  @Transactional
+  public AnswerKeyCorrectionInfo saveAnswerKeyCorrection(
+      String subject,
+      QuestionDto question,
+      AnswerKeyVerification verification,
+      String parentNote) {
+    String questionType = normalizeQuestionType(question.type());
+    AnswerKeyCorrection correction = new AnswerKeyCorrection(
+        fingerprint(subject),
+        questionFingerprint(question),
+        subject == null ? "" : subject,
+        questionNumber(question),
+        questionType,
+        question.prompt() == null ? "" : question.prompt(),
+        writeJson(question.options() == null ? List.of() : question.options()),
+        writeJson(verification.correctOptionLabels() == null ? List.of() : verification.correctOptionLabels()),
+        verification.expectedAnswer() == null ? "" : verification.expectedAnswer().trim(),
+        parentNote == null ? "" : parentNote.trim(),
+        verification.reason() == null ? "" : verification.reason().trim(),
+        verification.confidence() == null ? "" : verification.confidence().trim(),
+        verification.approved(),
+        Instant.now());
+    return toCorrectionInfo(correctionRepository.save(correction));
+  }
+
+  public List<AnswerKeyCorrectionInfo> relevantAnswerKeyCorrections(String subject) {
+    Set<String> requestedTerms = searchableTerms(subject);
+    return correctionRepository.findByApprovedTrueOrderByCreatedAtDesc().stream()
+        .filter(correction -> sharesSearchTerm(requestedTerms, correction.getSubject()))
+        .limit(8)
+        .map(this::toCorrectionInfo)
+        .toList();
   }
 
   @Transactional
@@ -193,6 +260,53 @@ public class AppStateService {
         null,
         null,
         null);
+  }
+
+  public AnswerKeyCorrectionInfo toCorrectionInfo(AnswerKeyCorrection correction) {
+    return new AnswerKeyCorrectionInfo(
+        correction.getId(),
+        correction.getSubject(),
+        correction.getQuestionNumber(),
+        correction.getQuestionType(),
+        correction.getPrompt(),
+        readJson(correction.getCorrectOptionLabelsJson(), new TypeReference<List<String>>() {
+        }),
+        correction.getExpectedAnswer(),
+        correction.getVerifierReason(),
+        correction.getVerifierConfidence(),
+        correction.getCreatedAt());
+  }
+
+  private String questionNumber(QuestionDto question) {
+    return question == null || question.number() == null || question.number().isBlank()
+        ? ""
+        : question.number().trim();
+  }
+
+  private Set<String> searchableTerms(String value) {
+    Set<String> terms = new LinkedHashSet<>();
+    if (value == null) {
+      return terms;
+    }
+    for (String term : value.toLowerCase().split("[^a-z0-9]+")) {
+      if (term.length() > 2) {
+        terms.add(term);
+      }
+    }
+    return terms;
+  }
+
+  private boolean sharesSearchTerm(Set<String> requestedTerms, String subject) {
+    if (requestedTerms.isEmpty()) {
+      return true;
+    }
+    Set<String> correctionTerms = searchableTerms(subject);
+    for (String term : requestedTerms) {
+      if (correctionTerms.contains(term)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private String writeJson(Object value) {

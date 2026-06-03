@@ -25,10 +25,15 @@ The active user-facing flow is:
 10. A student opens the link and the frontend embeds `/api/test/html/{testId}`.
 11. The generated HTML captures student answers and elapsed time, then posts to
     `POST /api/test/{testId}/submit`.
-12. The backend combines stored question-bank JSON, submitted answers, and
-    timing into a scoring payload for OpenAI.
+12. The backend scores `multiple_choice` and `multi_select` answers
+    deterministically against stored `correctOptionLabels`, and sends only
+    `free_text` questions to OpenAI for scoring.
 13. The command center shows the latest result for the selected test in the
     right-side results panel.
+14. The teacher can submit an answer-key correction from a wrong-answer card;
+    the backend verifies the correction with OpenAI, stores approved correction
+    memory, rescores the current submission, and feeds relevant memories into
+    future test generation prompts.
 
 ## Repository Layout
 
@@ -47,11 +52,23 @@ Important current files:
 - `backend/src/main/java/com/homestudenttester/controller/TestApiController.java`
   - API routes for generated tests.
 - `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` -
-  OpenAI JSON question-bank generation, backend HTML rendering, generated-test
-  answer scoring, MathJax-enabled test rendering, and scoring-response
-  normalization.
+  thin facade for OpenAI-backed generation, scoring, and answer-key correction
+  flows.
+- `backend/src/main/java/com/homestudenttester/service/OpenAiGeneratorService.java`
+  - OpenAI JSON question-bank generation plus MathJax-enabled generated-test
+  HTML rendering.
+- `backend/src/main/java/com/homestudenttester/service/OpenAiScorerService.java`
+  - deterministic objective scoring plus OpenAI free-text scoring and scoring
+  response normalization.
+- `backend/src/main/java/com/homestudenttester/service/OpenAiFeedbackService.java`
+  - OpenAI answer-key correction verification.
 - `backend/src/main/java/com/homestudenttester/service/AppStateService.java` -
-  H2-backed generated HTML/question-bank/result metadata storage.
+  H2-backed generated HTML/question-bank/result metadata storage plus
+  answer-key correction memory helpers.
+- `backend/src/main/java/com/homestudenttester/utils/ServiceUtils.java` -
+  shared parsing, label normalization, fingerprint, and escaping helpers.
+- `backend/src/main/java/com/homestudenttester/model/AnswerKeyCorrection.java`
+  - H2/JPA entity for parent-approved answer-key correction memory.
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` -
   `ADMIN_PASSWORD` enforcement for command-center/admin APIs.
 - `backend/src/main/java/com/homestudenttester/controller/ApiExceptionHandler.java`
@@ -65,7 +82,11 @@ Generated-test flow used by the frontend:
 - `GET /api/tests` - list generated tests.
 - `DELETE /api/tests/{testId}` - delete a generated test.
 - `GET /api/test/html/{testId}` - serve stored generated HTML.
-- `POST /api/test/{testId}/submit` - submit generated-test answers for OpenAI scoring.
+- `POST /api/test/{testId}/submit` - submit generated-test answers for backend
+  scoring; OpenAI is used only for `free_text` questions.
+- `POST /api/test/{testId}/questions/{questionNumber}/correction` - admin-only
+  answer-key correction flow; OpenAI verifies the parent correction, approved
+  corrections are saved, and the latest submission is rescored.
 - `GET /api/health` - health check.
 
 Admin routes require the `x-admin-token` header containing `ADMIN_PASSWORD`.
@@ -149,9 +170,17 @@ on system `gradle`.
   math expressions using `\( ... \)` and `\[ ... \]`.
 - Generated questions now include answer metadata; backend validation rejects
   invalid objective-question answer shapes before publishing.
+- Generated-test scoring is deterministic for `multiple_choice` and
+  `multi_select`; checkbox order does not matter, but the selected label set
+  must exactly match `correctOptionLabels`. OpenAI scoring is reserved for
+  `free_text` answers.
+- Parent-approved answer-key corrections are stored separately from generated
+  tests. Matching approved corrections override answer metadata during scoring
+  and are summarized into future generation prompts as correction memory.
 - Backend logs now cover generation/scoring request receipt, OpenAI call timing,
   parse/validation progress, persistence, token usage, and exception paths.
-- The command center shows per-test token usage for generation and scoring separately.
+- The command center shows per-test token usage for generation and, when
+  `free_text` questions are present, scoring separately.
 
 ## Known Gaps
 

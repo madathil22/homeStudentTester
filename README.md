@@ -14,7 +14,7 @@ locally in H2, and gives students a stable link such as `/test-amber-fox`.
 | Student UI | Stable generated links such as `/test-amber-fox`, `/test-blue-fox` |
 | Backend    | Spring Boot 3.3.5, Java 21, H2                    |
 | Frontend   | React 18, Vite, lucide-react                      |
-| AI flow    | OpenAI JSON question generation and scoring       |
+| AI flow    | OpenAI JSON question generation; OpenAI scoring only for free-text answers |
 | Storage    | Generated HTML plus question-bank/result metadata |
 
 ## 🧭 Flow
@@ -36,10 +36,14 @@ locally in H2, and gives students a stable link such as `/test-amber-fox`.
    - submit button
    - MathJax support for TeX-formatted math expressions
 7. Student opens the generated link and submits answers.
-8. Backend sends the stored question bank, submitted answers, and timing to
-   OpenAI for scoring.
+8. Backend scores `multiple_choice` and `multi_select` answers locally against
+   stored answer metadata, then sends only `free_text` answers to OpenAI for
+   scoring.
 9. The command center displays the selected test's result summary and
    wrong-answer details.
+10. A parent can submit an answer-key correction from a wrong-answer card; the
+    backend asks OpenAI to verify the correction, saves approved corrections,
+    rescores the test, and uses the correction memory in future generations.
 
 ## ⚡ Quick Start
 
@@ -111,6 +115,7 @@ Result details include:
 - final score
 - generation and scoring token usage per test record
 - wrong-answer feedback
+- parent-reviewed answer-key correction controls
 
 ## 📝 Student Experience
 
@@ -126,8 +131,8 @@ The generated page includes:
 - rendered math notation for TeX expressions such as `\(f(x)=ax^2+bx+c\)`
 
 On submit, the page sends answers and elapsed time to the backend. The backend
-scores the submission through OpenAI and stores the latest result for the
-teacher to review.
+scores objective selections deterministically, uses OpenAI only for free-text
+answers, and stores the latest result for the teacher to review.
 
 ## 🔌 API Reference
 
@@ -141,6 +146,7 @@ Teacher endpoints require the `x-admin-token` header containing
 | `DELETE` | `/api/tests/{testId}`       | Delete a generated test                        |
 | `GET`    | `/api/test/html/{testId}`   | Serve stored generated HTML                    |
 | `POST`   | `/api/test/{testId}/submit` | Submit student answers for scoring             |
+| `POST`   | `/api/test/{testId}/questions/{questionNumber}/correction` | Verify, save, and apply a parent answer-key correction |
 | `GET`    | `/api/health`               | Health check                                   |
 
 Student HTML and student submissions do not require the admin password.
@@ -183,6 +189,16 @@ question shapes before publishing: `multiple_choice` must have exactly one
 correct option, `multi_select` must have more than one correct option, and
 `free_text` must provide an `expectedAnswer`.
 
+At submission time, `multiple_choice` and `multi_select` questions are scored by
+the backend without an OpenAI call. Multi-select checkbox order does not matter,
+but the submitted label set must exactly match `correctOptionLabels`. OpenAI is
+reserved for scoring `free_text` answers.
+
+Approved parent corrections are stored separately from generated-test metadata.
+When a correction matches a question fingerprint, scoring uses the corrected
+answer key. Relevant approved corrections are also summarized into future
+generation prompts so the model can avoid repeating known mistakes.
+
 For math-heavy tests, generation now asks OpenAI to return TeX-formatted math
 inside strings, using `\( ... \)` for inline math and `\[ ... \]` for display
 math. The stored HTML template loads MathJax so those expressions render like
@@ -202,8 +218,13 @@ Important files:
 - `frontend/src/api.js` - fetch helper
 - `frontend/src/styles.css` - app styling
 - `backend/src/main/java/com/homestudenttester/controller/TestApiController.java` - API routes
-- `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` - OpenAI generation/scoring and HTML rendering
+- `backend/src/main/java/com/homestudenttester/service/OpenAiService.java` - thin facade for OpenAI-backed generation, scoring, and answer-key correction flows
+- `backend/src/main/java/com/homestudenttester/service/OpenAiGeneratorService.java` - OpenAI question-bank generation and generated-test HTML rendering
+- `backend/src/main/java/com/homestudenttester/service/OpenAiScorerService.java` - deterministic objective scoring plus OpenAI free-text scoring
+- `backend/src/main/java/com/homestudenttester/service/OpenAiFeedbackService.java` - OpenAI answer-key correction verification
 - `backend/src/main/java/com/homestudenttester/service/AppStateService.java` - H2-backed generated-test state
+- `backend/src/main/java/com/homestudenttester/utils/ServiceUtils.java` - shared parsing, label normalization, fingerprint, and escaping helpers
+- `backend/src/main/java/com/homestudenttester/model/AnswerKeyCorrection.java` - parent-approved answer-key correction memory
 - `backend/src/main/java/com/homestudenttester/service/AuthService.java` - admin password enforcement
 - `backend/src/main/java/com/homestudenttester/controller/ApiExceptionHandler.java` - API error mapping and backend error logging
 
@@ -232,7 +253,7 @@ The generated-test path now logs the major backend stages so failures are easier
 to diagnose from the server console:
 
 - request receipt
-- OpenAI generation/scoring start
+- OpenAI generation/free-text scoring start
 - response status and duration
 - parse and validation stages
 - generated-test/result persistence

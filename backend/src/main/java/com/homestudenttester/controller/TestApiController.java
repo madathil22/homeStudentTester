@@ -1,8 +1,10 @@
 package com.homestudenttester.controller;
 
 import com.homestudenttester.dto.GenerateTestRequest;
+import com.homestudenttester.dto.AnswerKeyCorrectionRequest;
 import com.homestudenttester.dto.GeneratedTestSubmission;
 import com.homestudenttester.dto.GeneratedTestSubmissionRequest;
+import com.homestudenttester.dto.QuestionDto;
 import com.homestudenttester.service.AppStateService;
 import com.homestudenttester.service.AuthService;
 import com.homestudenttester.service.OpenAiService;
@@ -41,7 +43,7 @@ public class TestApiController {
     authService.requireAdmin(adminToken);
     String subject = request == null || request.subject() == null ? "" : request.subject();
     log.info("Received generated-test request: {}", subject);
-    var generatedDocument = openAiService.generateTest(subject);
+    var generatedDocument = openAiService.generateTest(subject, appStateService.relevantAnswerKeyCorrections(subject));
     var generatedTest = appStateService.saveGeneratedTest(subject, generatedDocument);
     log.info("Generated test published: testId={}, link={}", generatedTest.id(), generatedTest.link());
     return Map.of(
@@ -101,7 +103,10 @@ public class TestApiController {
         !studentName.isBlank(),
         submission.answers().size(),
         submission.elapsedSeconds());
-    var result = openAiService.scoreGeneratedTest(metadata.questionBank(), submission);
+    var result = openAiService.scoreGeneratedTest(
+        metadata.questionBank(),
+        submission,
+        appStateService.approvedCorrectionsFor(metadata.questionBank()));
     var generatedTest = appStateService.saveGeneratedTestResult(testId, submission, result);
     log.info(
         "Generated-test submission scored: testId={}, earned={}, possible={}",
@@ -111,6 +116,68 @@ public class TestApiController {
     return Map.of(
         "test", generatedTest,
         "result", result);
+  }
+
+  @PostMapping("/api/test/{testId}/questions/{questionNumber}/correction")
+  public Map<String, Object> correctAnswerKey(
+      @RequestHeader(value = "x-admin-token", required = false) String adminToken,
+      @PathVariable String testId,
+      @PathVariable String questionNumber,
+      @RequestBody(required = false) AnswerKeyCorrectionRequest request) {
+    authService.requireAdmin(adminToken);
+    log.info("Received answer-key correction request: testId={}, questionNumber={}", testId, questionNumber);
+    var metadata = appStateService.generatedTestMetadata(testId);
+    if (metadata.questionBank() == null) {
+      throw new IllegalStateException("Generated test does not have question-bank JSON available for correction.");
+    }
+    QuestionDto question = findQuestion(metadata.questionBank().questions(), questionNumber);
+    AnswerKeyCorrectionRequest safeRequest = request == null
+        ? new AnswerKeyCorrectionRequest(questionNumber, java.util.List.of(), "", "")
+        : new AnswerKeyCorrectionRequest(
+            questionNumber,
+            request.correctOptionLabels() == null ? java.util.List.of() : request.correctOptionLabels(),
+            request.expectedAnswer() == null ? "" : request.expectedAnswer(),
+            request.parentNote() == null ? "" : request.parentNote());
+    var verification = openAiService.verifyAnswerKeyCorrection(metadata.subject(), question, safeRequest);
+    var correction = appStateService.saveAnswerKeyCorrection(
+        metadata.subject(),
+        question,
+        verification,
+        safeRequest.parentNote());
+    Object result = metadata.result();
+    Object generatedTest = null;
+    if (metadata.submission() != null) {
+      var rescored = openAiService.scoreGeneratedTest(
+          metadata.questionBank(),
+          metadata.submission(),
+          appStateService.approvedCorrectionsFor(metadata.questionBank()));
+      generatedTest = appStateService.saveGeneratedTestResult(testId, metadata.submission(), rescored);
+      result = rescored;
+    }
+    return Map.of(
+        "correction", correction,
+        "test", generatedTest == null ? appStateService.generatedTests().stream()
+            .filter(test -> test.id().equals(testId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Generated test not found.")) : generatedTest,
+        "result", result == null ? Map.of() : result);
+  }
+
+  private QuestionDto findQuestion(java.util.List<QuestionDto> questions, String questionNumber) {
+    if (questions == null || questions.isEmpty()) {
+      throw new IllegalArgumentException("No questions are available for correction.");
+    }
+    String requested = questionNumber == null ? "" : questionNumber.trim();
+    for (int index = 0; index < questions.size(); index++) {
+      QuestionDto question = questions.get(index);
+      String number = question.number() == null || question.number().isBlank()
+          ? String.valueOf(index + 1)
+          : question.number().trim();
+      if (number.equals(requested)) {
+        return question;
+      }
+    }
+    throw new IllegalArgumentException("Question not found.");
   }
 
 }

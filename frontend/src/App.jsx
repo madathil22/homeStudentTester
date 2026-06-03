@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardList, Clock3, ExternalLink, FileQuestion, LoaderCircle, LockKeyhole, LogOut, RefreshCcw, Trash2 } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Clock3, ExternalLink, FileQuestion, LoaderCircle, LockKeyhole, LogOut, RefreshCcw, ShieldCheck, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiRequest } from './api.js';
 
@@ -251,6 +251,33 @@ function AdminApp() {
     }
   }
 
+  async function submitAnswerKeyCorrection(testId, questionNumber, correction) {
+    setLoading(true);
+    setStatus('Verifying answer-key correction...');
+    try {
+      const data = await apiRequest(
+        `/api/test/${encodeURIComponent(testId)}/questions/${encodeURIComponent(questionNumber)}/correction`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...adminHeaders() },
+          body: JSON.stringify(correction)
+        }
+      );
+      if (data.test) {
+        setTests((currentTests) => currentTests.map((test) => (test.id === data.test.id ? data.test : test)));
+      } else {
+        await refreshTests();
+      }
+      setStatus('Correction verified, saved, and applied.');
+      return data;
+    } catch (error) {
+      setStatus(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (!adminPassword) {
     return <CommandCenterLogin onUnlock={unlockCommandCenter} status={status} />;
   }
@@ -439,7 +466,12 @@ function AdminApp() {
           )}
         </div>
 
-        <ResultsPanel selectedTest={selectedTest} totalSubmitted={totalSubmitted} />
+        <ResultsPanel
+          selectedTest={selectedTest}
+          totalSubmitted={totalSubmitted}
+          onSubmitCorrection={submitAnswerKeyCorrection}
+          loading={loading}
+        />
       </section>
     </main>
   );
@@ -518,8 +550,9 @@ function ScoreBadge({ result }) {
   return <span className="score-badge">{formatScore(result)}</span>;
 }
 
-function ResultsPanel({ selectedTest, totalSubmitted }) {
+function ResultsPanel({ selectedTest, totalSubmitted, onSubmitCorrection, loading }) {
   const panelRef = useRef(null);
+  const [correctionStatus, setCorrectionStatus] = useState({});
 
   useEffect(() => {
     const mathJax = window.MathJax;
@@ -602,6 +635,29 @@ function ResultsPanel({ selectedTest, totalSubmitted }) {
                         <dd>{wrongAnswer.explanation || 'No explanation provided.'}</dd>
                       </div>
                     </dl>
+                    <AnswerKeyCorrectionForm
+                      wrongAnswer={wrongAnswer}
+                      disabled={loading}
+                      status={correctionStatus[wrongAnswer.questionNumber]}
+                      onSubmit={async (correction) => {
+                        setCorrectionStatus((current) => ({
+                          ...current,
+                          [wrongAnswer.questionNumber]: 'Verifying correction...'
+                        }));
+                        try {
+                          await onSubmitCorrection(selectedTest.id, wrongAnswer.questionNumber, correction);
+                          setCorrectionStatus((current) => ({
+                            ...current,
+                            [wrongAnswer.questionNumber]: 'Correction saved and result rescored.'
+                          }));
+                        } catch (error) {
+                          setCorrectionStatus((current) => ({
+                            ...current,
+                            [wrongAnswer.questionNumber]: error.message
+                          }));
+                        }
+                      }}
+                    />
                   </article>
                 ))}
               </div>
@@ -622,6 +678,78 @@ function ResultsPanel({ selectedTest, totalSubmitted }) {
       )}
     </aside>
   );
+}
+
+function AnswerKeyCorrectionForm({ wrongAnswer, onSubmit, disabled, status }) {
+  const [open, setOpen] = useState(false);
+  const [correctLabels, setCorrectLabels] = useState(wrongAnswer.studentAnswer || '');
+  const [expectedAnswer, setExpectedAnswer] = useState('');
+  const [parentNote, setParentNote] = useState('');
+  const submitting = status === 'Verifying correction...';
+  const canSubmit = correctLabels.trim() || expectedAnswer.trim();
+
+  async function submitCorrection(event) {
+    event.preventDefault();
+    if (!canSubmit || disabled || submitting) return;
+    await onSubmit({
+      correctOptionLabels: labelsFromText(correctLabels),
+      expectedAnswer: expectedAnswer.trim(),
+      parentNote: parentNote.trim()
+    });
+  }
+
+  return (
+    <div className="answer-key-correction">
+      <button type="button" className="secondary correction-toggle" onClick={() => setOpen((value) => !value)}>
+        <ShieldCheck size={16} aria-hidden="true" />
+        Fix answer key
+      </button>
+      {open ? (
+        <form className="correction-form" onSubmit={submitCorrection}>
+          <label className="field">
+            <span>Correct option labels</span>
+            <input
+              type="text"
+              value={correctLabels}
+              onChange={(event) => setCorrectLabels(event.target.value)}
+              placeholder="e.g. B or A, C"
+            />
+          </label>
+          <label className="field">
+            <span>Correct free-text answer</span>
+            <textarea
+              value={expectedAnswer}
+              onChange={(event) => setExpectedAnswer(event.target.value)}
+              placeholder="Use this only for free-text questions"
+            />
+          </label>
+          <label className="field">
+            <span>Parent note</span>
+            <textarea
+              value={parentNote}
+              onChange={(event) => setParentNote(event.target.value)}
+              placeholder="Why should this key be corrected?"
+            />
+          </label>
+          <div className="correction-actions">
+            <button type="submit" disabled={!canSubmit || disabled || submitting}>
+              {submitting ? <LoaderCircle className="spin" size={16} aria-hidden="true" /> : <ShieldCheck size={16} aria-hidden="true" />}
+              Verify & Save
+            </button>
+          </div>
+          {status ? <p className="correction-status">{status}</p> : null}
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function labelsFromText(value) {
+  if (!value) return [];
+  return value
+    .split(/[\s,;]+/)
+    .map((label) => label.trim().toUpperCase())
+    .filter(Boolean);
 }
 
 function TokenUsageSummary({ label, usage }) {
