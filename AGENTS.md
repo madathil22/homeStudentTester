@@ -153,6 +153,15 @@ cd backend
 gradle test
 ```
 
+Backend tests intentionally cover regression-prone contracts in the generated
+question-bank flow:
+
+- deterministic objective scoring for `multiple_choice` and `multi_select`
+- number-line visual rendering from structured JSON, including escaping unsafe
+  model-provided labels and ignoring unsupported visual types
+- question fingerprint behavior for correction memory, including visual data and
+  option-order stability
+
 There is no Gradle wrapper checked in yet, so backend commands currently depend
 on system `gradle`.
 
@@ -208,3 +217,9 @@ on system `gradle`.
 - Keep changes small and aligned with the current UI before doing broad cleanup.
 - If adding backend features, update `README.md` and this file when the handoff
   story changes.
+- For any major product, architecture, testing, or debugging change, also update
+  the active `WAI_Track-*.jsonl` file in the workspace root. Treat the WAI Track
+  as chronological project memory: record what changed, why it changed, key
+  decisions, insights, touched files, and any unresolved follow-up work so each
+  future session can understand how the project moved, not only its current
+  state.

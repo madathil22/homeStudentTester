@@ -262,6 +262,15 @@ gradle test
 There is no Gradle wrapper checked in yet, so backend commands depend on system
 `gradle`.
 
+Backend tests include a few intentional regression tripwires for the generated
+question-bank flow:
+
+- objective scoring for `multiple_choice` and `multi_select`
+- number-line visual rendering from structured JSON, including escaping unsafe
+  labels and ignoring unsupported visual types
+- question fingerprints that include visual data while remaining stable when
+  objective answer options are reordered
+
 ## 🔍 Backend Diagnostics
 
 The generated-test path now logs the major backend stages so failures are easier
