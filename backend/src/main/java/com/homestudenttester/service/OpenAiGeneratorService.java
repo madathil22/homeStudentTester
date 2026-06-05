@@ -23,6 +23,7 @@ import com.homestudenttester.dto.PassageDto;
 import com.homestudenttester.dto.QuestionBank;
 import com.homestudenttester.dto.QuestionDto;
 import com.homestudenttester.dto.TokenUsage;
+import com.homestudenttester.dto.VisualDto;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -31,6 +32,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -215,6 +217,22 @@ public class OpenAiGeneratorService {
 
           .question-prompt {
             margin: 8px 0 14px;
+          }
+
+          .question-visual {
+            margin: 14px 0 16px;
+            overflow-x: auto;
+          }
+
+          .question-visual svg {
+            display: block;
+            max-width: 100%%;
+            height: auto;
+          }
+
+          .number-line text {
+            fill: #24324d;
+            font: 13px Inter, ui-sans-serif, system-ui, sans-serif;
           }
 
           mjx-container {
@@ -479,8 +497,9 @@ public class OpenAiGeneratorService {
         + "\"title\":\"string\","
         + "\"instructions\":\"string\","
         + "\"passages\":[{\"id\":\"p1\",\"title\":\"string\",\"body\":\"string\"}],"
-        + "\"questions\":[{\"number\":\"1\",\"type\":\"multiple_choice|multi_select|free_text\",\"points\":1,\"prompt\":\"string\",\"options\":[{\"label\":\"A\",\"text\":\"string\"}],\"passageIds\":[\"p1\"],\"correctOptionLabels\":[\"A\"],\"expectedAnswer\":\"string\"}]"
+        + "\"questions\":[{\"number\":\"1\",\"type\":\"multiple_choice|multi_select|free_text\",\"points\":1,\"prompt\":\"string\",\"visual\":{\"type\":\"number_line\",\"data\":{\"min\":0,\"max\":10,\"tickStep\":1,\"points\":[{\"label\":\"A\",\"value\":7}],\"jumps\":[{\"from\":2,\"to\":7,\"label\":\"+5\"}]}},\"options\":[{\"label\":\"A\",\"text\":\"string\"}],\"passageIds\":[\"p1\"],\"correctOptionLabels\":[\"A\"],\"expectedAnswer\":\"string\"}]"
         + "}. "
+        + "Use visual only when a diagram is instructionally useful; otherwise use null. For number_line visuals, provide numeric min, max, tickStep, optional points, and optional jumps. "
         + "For multiple_choice, provide exactly one correctOptionLabels entry and an empty expectedAnswer. For multi_select, provide every correct option label and an empty expectedAnswer. For free_text, use an empty options array, an empty correctOptionLabels array, and a concise expectedAnswer. "
         + "Include directions and a mix of question types appropriate for the subject.";
   }
@@ -498,6 +517,7 @@ public class OpenAiGeneratorService {
         + countInstruction
         + "Use multiple_choice, multi_select, and free_text questions as appropriate to the subject. "
         + "Assign a score value in the points field for every question. "
+        + "When a number line would make the problem clearer, include a number_line visual instead of describing the line only in prose. "
         + "Use options only for multiple_choice or multi_select questions. Make sure every multiple_choice question has exactly one correct answer, every multi_select question has more than one correct answer, and no option set contains duplicate answer text. "
         + answerKeyMemoryInstruction(correctionMemories)
         + "Return only JSON that matches the requested schema. "
@@ -642,7 +662,7 @@ public class OpenAiGeneratorService {
     return TEST_TEMPLATE.formatted(safeSubject, safeSubject, indentContent(testContent));
   }
 
-  private String renderQuestionBank(QuestionBank questionBank) {
+  String renderQuestionBank(QuestionBank questionBank) {
     StringBuilder html = new StringBuilder();
     html.append(
         "<label class=\"student-name\">Student name<input type=\"text\" name=\"studentName\" autocomplete=\"name\"></label>\n");
@@ -693,6 +713,8 @@ public class OpenAiGeneratorService {
         .append(escapeMultilineText(question.prompt()))
         .append("</p>\n");
 
+    html.append(renderVisual(question.visual()));
+
     if (type.equals("multiple_choice") || type.equals("multi_select")) {
       String inputType = type.equals("multi_select") ? "checkbox" : "radio";
       if (question.options() != null) {
@@ -726,6 +748,175 @@ public class OpenAiGeneratorService {
         + (isBlank(label) ? "" : ". ")
         + escapeHtml(text)
         + "</span></label>\n";
+  }
+
+  private String renderVisual(VisualDto visual) {
+    if (visual == null || isBlank(visual.type()) || visual.data() == null || visual.data().isNull()) {
+      return "";
+    }
+    String type = visual.type().trim().toLowerCase(Locale.ROOT);
+    if (type.equals("number_line")) {
+      return renderNumberLine(visual.data());
+    }
+    return "";
+  }
+
+  private String renderNumberLine(JsonNode data) {
+    double min = numberField(data, "min", 0);
+    double max = numberField(data, "max", 10);
+    double tickStep = numberField(data, "tickStep", 1);
+    if (max <= min || tickStep <= 0) {
+      return "";
+    }
+
+    int tickCount = (int) Math.floor((max - min) / tickStep) + 1;
+    if (tickCount < 2 || tickCount > 41) {
+      return "";
+    }
+
+    int width = 720;
+    int height = 170;
+    int left = 48;
+    int right = width - 48;
+    int axisY = 100;
+    StringBuilder svg = new StringBuilder();
+    svg.append("<div class=\"question-visual\"><svg class=\"number-line\" viewBox=\"0 0 ")
+        .append(width)
+        .append(" ")
+        .append(height)
+        .append("\" role=\"img\" aria-label=\"Number line from ")
+        .append(escapeAttribute(formatNumber(min)))
+        .append(" to ")
+        .append(escapeAttribute(formatNumber(max)))
+        .append("\">")
+        .append("<line x1=\"")
+        .append(left)
+        .append("\" y1=\"")
+        .append(axisY)
+        .append("\" x2=\"")
+        .append(right)
+        .append("\" y2=\"")
+        .append(axisY)
+        .append("\" stroke=\"#24324d\" stroke-width=\"3\" stroke-linecap=\"round\"/>");
+
+    for (int tick = 0; tick < tickCount; tick++) {
+      double value = min + (tick * tickStep);
+      double x = numberLineX(value, min, max, left, right);
+      svg.append("<line x1=\"")
+          .append(formatSvgNumber(x))
+          .append("\" y1=\"86\" x2=\"")
+          .append(formatSvgNumber(x))
+          .append("\" y2=\"114\" stroke=\"#24324d\" stroke-width=\"2\"/>")
+          .append("<text x=\"")
+          .append(formatSvgNumber(x))
+          .append("\" y=\"136\" text-anchor=\"middle\">")
+          .append(escapeHtml(formatNumber(value)))
+          .append("</text>");
+    }
+
+    JsonNode jumps = data.path("jumps");
+    if (jumps.isArray()) {
+      int jumpIndex = 0;
+      for (JsonNode jump : jumps) {
+        if (jumpIndex >= 6) {
+          break;
+        }
+        double from = numberField(jump, "from", Double.NaN);
+        double to = numberField(jump, "to", Double.NaN);
+        if (!Double.isFinite(from) || !Double.isFinite(to) || from < min || from > max || to < min || to > max) {
+          continue;
+        }
+        double x1 = numberLineX(from, min, max, left, right);
+        double x2 = numberLineX(to, min, max, left, right);
+        double radius = Math.max(18, Math.abs(x2 - x1) / 2);
+        double mid = (x1 + x2) / 2;
+        double y = axisY - 14 - (jumpIndex * 12);
+        String sweep = to >= from ? "1" : "0";
+        svg.append("<path d=\"M ")
+            .append(formatSvgNumber(x1))
+            .append(" ")
+            .append(formatSvgNumber(y))
+            .append(" A ")
+            .append(formatSvgNumber(radius))
+            .append(" ")
+            .append(formatSvgNumber(radius))
+            .append(" 0 0 ")
+            .append(sweep)
+            .append(" ")
+            .append(formatSvgNumber(x2))
+            .append(" ")
+            .append(formatSvgNumber(y))
+            .append("\" fill=\"none\" stroke=\"#1c5f5a\" stroke-width=\"2\"/>");
+        String label = textField(jump, "label");
+        if (!isBlank(label)) {
+          svg.append("<text x=\"")
+              .append(formatSvgNumber(mid))
+              .append("\" y=\"")
+              .append(formatSvgNumber(Math.max(18, y - radius + 18)))
+              .append("\" text-anchor=\"middle\" font-weight=\"700\">")
+              .append(escapeHtml(label))
+              .append("</text>");
+        }
+        jumpIndex++;
+      }
+    }
+
+    JsonNode points = data.path("points");
+    if (points.isArray()) {
+      int pointIndex = 0;
+      for (JsonNode point : points) {
+        if (pointIndex >= 12) {
+          break;
+        }
+        double value = numberField(point, "value", Double.NaN);
+        if (!Double.isFinite(value) || value < min || value > max) {
+          continue;
+        }
+        double x = numberLineX(value, min, max, left, right);
+        String label = textField(point, "label");
+        svg.append("<circle cx=\"")
+            .append(formatSvgNumber(x))
+            .append("\" cy=\"")
+            .append(axisY)
+            .append("\" r=\"7\" fill=\"#1c5f5a\"/>");
+        if (!isBlank(label)) {
+          svg.append("<text x=\"")
+              .append(formatSvgNumber(x))
+              .append("\" y=\"72\" text-anchor=\"middle\" font-weight=\"800\">")
+              .append(escapeHtml(label))
+              .append("</text>");
+        }
+        pointIndex++;
+      }
+    }
+
+    svg.append("</svg></div>\n");
+    return svg.toString();
+  }
+
+  private double numberLineX(double value, double min, double max, int left, int right) {
+    return left + ((value - min) / (max - min) * (right - left));
+  }
+
+  private double numberField(JsonNode node, String field, double fallback) {
+    JsonNode value = node == null ? null : node.get(field);
+    return value != null && value.isNumber() ? value.asDouble() : fallback;
+  }
+
+  private String textField(JsonNode node, String field) {
+    JsonNode value = node == null ? null : node.get(field);
+    return value != null && value.isTextual() ? value.asText() : "";
+  }
+
+  private String formatNumber(double value) {
+    if (Math.rint(value) == value) {
+      return String.valueOf((long) value);
+    }
+    return formatSvgNumber(value);
+  }
+
+  private String formatSvgNumber(double value) {
+    return String.format(Locale.ROOT, "%.2f", value).replaceAll("\\.?0+$", "");
   }
 
 }

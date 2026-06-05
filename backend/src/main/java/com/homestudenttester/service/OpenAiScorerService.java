@@ -205,6 +205,7 @@ public class OpenAiScorerService {
           question.type(),
           question.points(),
           question.prompt(),
+          question.visual(),
           question.options(),
           question.passageIds(),
           type.equals("multiple_choice") || type.equals("multi_select") ? correctedLabels : question.correctOptionLabels(),

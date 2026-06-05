@@ -166,6 +166,16 @@ OpenAI returns JSON shaped around the existing DTOs:
       "type": "multiple_choice",
       "points": 1,
       "prompt": "string",
+      "visual": {
+        "type": "number_line",
+        "data": {
+          "min": 0,
+          "max": 10,
+          "tickStep": 1,
+          "points": [{ "label": "A", "value": 7 }],
+          "jumps": [{ "from": 2, "to": 7, "label": "+5" }]
+        }
+      },
       "options": [{ "label": "A", "text": "string" }],
       "passageIds": [],
       "correctOptionLabels": ["A"],
@@ -183,6 +193,11 @@ Supported generated question types:
 
 The backend also normalizes text-style aliases such as `short_answer`,
 `short_response`, `essay`, and `text` to `free_text`.
+
+Questions may include an optional `visual` object. The first supported visual
+type is `number_line`; OpenAI returns structured numeric data, and the backend
+renders safe SVG from that data instead of accepting raw HTML or SVG from the
+model. Use `null` when a question does not need a visual.
 
 Generated questions include answer metadata so the backend can reject invalid
 question shapes before publishing: `multiple_choice` must have exactly one

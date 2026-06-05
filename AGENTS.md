@@ -168,6 +168,9 @@ on system `gradle`.
   `app.test-link-colors` and `app.test-link-animals` in `application.yml`.
 - Generated test HTML loads MathJax, and generation prompts ask for TeX-wrapped
   math expressions using `\( ... \)` and `\[ ... \]`.
+- Generated questions may include an optional `visual` object. The first
+  supported renderer is `number_line`, where OpenAI supplies structured numeric
+  data and the backend renders safe SVG.
 - Generated questions now include answer metadata; backend validation rejects
   invalid objective-question answer shapes before publishing.
 - Generated-test scoring is deterministic for `multiple_choice` and

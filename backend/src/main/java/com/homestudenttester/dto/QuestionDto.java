@@ -7,6 +7,7 @@ public record QuestionDto(
     String type,
     double points,
     String prompt,
+    VisualDto visual,
     List<OptionDto> options,
     List<String> passageIds,
     List<String> correctOptionLabels,

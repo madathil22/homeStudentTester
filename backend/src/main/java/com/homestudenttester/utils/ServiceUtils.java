@@ -307,6 +307,12 @@ public final class ServiceUtils {
     StringBuilder value = new StringBuilder();
     value.append(normalizeForFingerprint(question == null ? "" : question.prompt()));
     value.append("|");
+    if (question != null && question.visual() != null) {
+      value.append(normalizeForFingerprint(question.visual().type()))
+          .append(":")
+          .append(normalizeForFingerprint(String.valueOf(question.visual().data())))
+          .append("|");
+    }
     if (question != null && question.options() != null) {
       question.options().stream()
           .map(ServiceUtils::optionFingerprint)
